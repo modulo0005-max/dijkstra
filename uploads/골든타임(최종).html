@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>골든타임 사수: 다익스트라 구급차 런 (심화편)</title>
+    <!-- 보안 위험: polyfill.io 링크 제거됨 -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f0a0a;
+            --panel-bg: #1a1111;
+            --text-main: #f8fafc;
+            --accent-glow: #ef4444; /* 응급구조 테마 (Red) */
+            --accent-sub: #3b82f6;  /* 의료/신뢰 (Blue) */
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            --node-color: #1e1b4b;
+            --edge-color: #64748b;
+            --math-bg: #3b0707;
+            --theory-bg: #0f172a; 
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .game-container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid var(--accent-glow);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: var(--accent-glow);
+            text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+            margin: 0;
+            font-size: 2.2em;
+        }
+
+        /* Status Bar (Timer & Lives) */
+        .status-bar {
+            display: none;
+            justify-content: space-between;
+            background-color: #000000;
+            padding: 15px 25px;
+            border-radius: 8px;
+            border: 1px solid #ef4444;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+        .timer { color: #facc15; }
+        .lives { color: #ef4444; animation: pulse 1.5s infinite; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .story-box {
+            background: linear-gradient(145deg, #2a0a0a, #0a0a0a);
+            border-left: 4px solid var(--accent-sub);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .stage-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid #3f1515;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            display: none;
+        }
+
+        .stage-title {
+            color: #ffffff;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .map-container {
+            background-color: #050505;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            border: 1px inset #334155;
+        }
+
+        svg {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            overflow: visible;
+        }
+
+        /* SVG Styles */
+        .edge { stroke: var(--edge-color); stroke-width: 3; stroke-dasharray: 5,5; }
+        .node { fill: var(--node-color); stroke: var(--accent-sub); stroke-width: 3; cursor: pointer; transition: 0.3s; }
+        .node:hover { fill: #1d4ed8; }
+        .node-text { fill: #fff; font-weight: bold; font-size: 16px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+        .weight-bg { fill: #000; opacity: 0.9; }
+        .weight-text { fill: #facc15; font-size: 14px; font-weight: bold; text-anchor: middle; dominant-baseline: central; }
+        .room-label { fill: #94a3b8; font-size: 12px; text-anchor: middle; }
+
+        /* Inputs and Buttons */
+        .input-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .input-box { flex: 1; min-width: 200px; }
+        .input-box label { display: block; margin-bottom: 5px; font-size: 14px; color: #cbd5e1; }
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 12px; box-sizing: border-box; border-radius: 6px;
+            border: 1px solid #475569; background-color: #020617; color: #f8fafc; font-size: 16px;
+        }
+        input:focus { outline: none; border-color: var(--accent-glow); box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+
+        button {
+            width: 100%; padding: 15px; background: linear-gradient(to right, #dc2626, #b91c1c);
+            color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        button:hover { background: linear-gradient(to right, #b91c1c, #991b1b); transform: translateY(-2px); }
+        button:disabled { background: #475569; cursor: not-allowed; transform: none; }
+        
+        .btn-start { background: linear-gradient(to right, #2563eb, #1d4ed8); font-size: 1.2em; padding: 20px;}
+        .btn-start:hover { background: linear-gradient(to right, #1d4ed8, #1e40af); }
+        .btn-next { background: linear-gradient(to right, #8b5cf6, #6d28d9); margin-top: 20px;}
+        .btn-next:hover { background: linear-gradient(to right, #7c3aed, #5b21b6); }
+
+        .feedback { margin-top: 15px; padding: 10px; border-radius: 6px; font-weight: bold; display: none; text-align: center; }
+        .feedback.error { display: block; background-color: rgba(239, 68, 68, 0.1); color: var(--error-color); border: 1px solid var(--error-color); }
+        .feedback.success { display: block; background-color: rgba(16, 185, 129, 0.1); color: var(--success-color); border: 1px solid var(--success-color); }
+
+        /* Math Explanation Box */
+        .math-explanation {
+            display: none; margin-top: 20px; padding: 20px;
+            background-color: var(--math-bg); border-left: 4px solid #ef4444;
+            border-radius: 8px; color: #fee2e2; font-size: 0.95em; line-height: 1.6;
+            animation: fadeIn 1s ease-in;
+        }
+        .math-explanation h3 { color: #fca5a5; margin-top: 0; display: flex; align-items: center; gap: 8px; }
+
+        /* End Screens */
+        #final-success, #game-over { display: none; text-align: center; padding: 50px 20px; border-radius: 12px; margin-top: 30px; animation: fadeIn 1.5s ease-in; }
+        #final-success { background: radial-gradient(circle, #064e3b 0%, #020617 100%); border: 2px solid var(--success-color); }
+        #game-over { background: radial-gradient(circle, #7f1d1d 0%, #020617 100%); border: 2px solid var(--error-color); }
+
+        /* Exploration Section Styles */
+        .exploration-panel {
+            background-color: var(--theory-bg);
+            border: 1px solid var(--accent-sub);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 30px;
+            display: none;
+            animation: fadeIn 1.5s ease-in;
+            line-height: 1.7;
+        }
+        .exploration-panel h3 { color: #60a5fa; border-bottom: 1px dashed #475569; padding-bottom: 10px; margin-top: 30px; }
+        .career-card {
+            background-color: #020617;
+            border-left: 4px solid var(--accent-sub);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+        .career-card h4 { margin: 0 0 10px 0; color: #93c5fd; }
+        
+        /* Theory Card */
+        .theory-card {
+            background-color: #0f172a;
+            border-left: 4px solid #8b5cf6;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            color: #e2e8f0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .theory-card h4 { margin: 0 0 12px 0; color: #c4b5fd; font-size: 1.1em; }
+
+        .tag {
+            display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 5px; margin-bottom: 5px;
+        }
+        .tag-math { background-color: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid #f472b6; }
+        .tag-info { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #60a5fa; }
+        .tag-sci { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #34d399; }
+        .tag-med { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #f87171; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+<a href="../시뮬레이터 허브.dc.html" style="position:fixed;top:16px;left:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(0,0,0,0.55);color:var(--accent-glow);border:1px solid var(--accent-glow);border-radius:30px;font-family:'Pretendard',sans-serif;font-size:14px;font-weight:700;text-decoration:none;backdrop-filter:blur(6px);">← 처음으로</a>
+
+<div class="game-container">
+    <div class="header">
+        <h1>🚨 골든타임을 사수하라! (심화편)</h1>
+        <p>복잡하게 얽힌 우회로 속에서 단 하나의 완벽한 생명줄을 찾아내세요.</p>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="intro-screen" class="story-box">
+        <b>[응급 상황 발생 - CODE RED]</b><br>
+        도심 한복판에서 대형 추돌 사고가 발생했습니다! 환자의 생명이 위급한 '골든타임' 내에 권역응급의료센터(G)까지 도달해야 합니다.<br>
+        하지만 도심의 도로망은 예상보다 훨씬 복잡하게 꼬여있습니다.<br>
+        <b>간선의 숫자(가중치)는 해당 구간의 예상 통과 시간(분)을 의미합니다.</b><br><br>
+        ⚠️ <b>구조 조건:</b>
+        <ul>
+            <li>지정된 출발점에서 종착점까지 <b>가장 빠른 소요 시간(분)과 경로(모든 알파벳 순서대로)</b>를 정확히 산출하세요.</li>
+            <li>경로 계산을 <b>2번 틀리면</b> 환자의 바이탈 사인이 한계에 다다라 미션에 실패합니다.</li>
+            <li>[경고] 노드가 추가되었습니다. 눈으로 대충 짐작하여 풀 수 없습니다. 모든 우회로의 비용을 갱신(Relaxation)하세요!</li>
+        </ul>
+        <button class="btn-start" onclick="startGame()">🚑 고난도 구조 작전 개시 (타이머 시작)</button>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="status-bar">
+        <div class="timer">⏱ 출동 경과: <span id="time-display">00:00</span></div>
+        <div class="lives">환자 바이탈: <span id="lives-display">🟢🟢 (안정)</span></div>
+    </div>
+
+    <!-- STAGE 1 -->
+    <div class="stage-panel" id="stage1">
+        <h2 class="stage-title">🚨 STAGE 1: 5개의 교차로, 얽힌 골목길</h2>
+        <p>사고 현장(S)에서 도로 진입로(T)로 가야 합니다. 고가도로(C)가 새로 추가되었습니다. 최적의 릴레이 우회로를 찾아내세요!</p>
+        <div class="map-container">
+            <svg viewBox="0 0 400 250">
+                <!-- Edges -->
+                <line x1="50" y1="125" x2="150" y2="50" class="edge" /> <!-- S-A -->
+                <line x1="50" y1="125" x2="150" y2="200" class="edge" /> <!-- S-B -->
+                <line x1="150" y1="200" x2="150" y2="50" class="edge" /> <!-- B-A -->
+                <line x1="150" y1="200" x2="250" y2="180" class="edge" /> <!-- B-C -->
+                <line x1="150" y1="50" x2="250" y2="180" class="edge" /> <!-- A-C -->
+                <line x1="150" y1="50" x2="350" y2="125" class="edge" /> <!-- A-T -->
+                <line x1="250" y1="180" x2="350" y2="125" class="edge" /> <!-- C-T -->
+
+                <!-- Weights -->
+                <rect x="90" y="77" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="90" y="77" class="weight-text" id="w1_SA">45</text> <!-- S-A -->
+                <rect x="90" y="152" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="90" y="152" class="weight-text" id="w1_SB">15</text> <!-- S-B -->
+                <rect x="150" y="125" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="150" y="125" class="weight-text" id="w1_BA">10</text> <!-- B-A -->
+                <rect x="200" y="190" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="200" y="190" class="weight-text" id="w1_BC">35</text> <!-- B-C -->
+                <rect x="200" y="115" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="200" y="115" class="weight-text" id="w1_AC">12</text> <!-- A-C -->
+                <rect x="250" y="87" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="250" y="87" class="weight-text" id="w1_AT">40</text> <!-- A-T -->
+                <rect x="300" y="152" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="300" y="152" class="weight-text" id="w1_CT">15</text> <!-- C-T -->
+
+                <!-- Nodes -->
+                <circle cx="50" cy="125" r="18" class="node" /><text x="50" y="125" class="node-text">S</text><text x="50" y="155" class="room-label">사고 현장</text>
+                <circle cx="150" cy="50" r="18" class="node" /><text x="150" y="50" class="node-text">A</text><text x="150" y="20" class="room-label">중앙 직진로</text>
+                <circle cx="150" cy="200" r="18" class="node" /><text x="150" y="200" class="node-text">B</text><text x="150" y="230" class="room-label">골목 1</text>
+                <circle cx="250" cy="180" r="18" class="node" /><text x="250" y="180" class="node-text">C</text><text x="250" y="210" class="room-label">고가도로</text>
+                <circle cx="350" cy="125" r="18" class="node" /><text x="350" y="125" class="node-text">T</text><text x="350" y="155" class="room-label">도로 진입로</text>
+            </svg>
+        </div>
+        <div class="input-group">
+            <div class="input-box"><label>최단 경로 (예: SBACT)</label><input type="text" id="path1" placeholder="대문자 연속 입력"></div>
+            <div class="input-box"><label>최단 소요 시간 (분)</label><input type="number" id="cost1" placeholder="숫자 입력"></div>
+        </div>
+        <button id="btn-submit1" onclick="solveStage(1)">1차 방어선 돌파!</button>
+        <div id="feedback1" class="feedback"></div>
+        
+        <!-- Math Explanation 1 -->
+        <div id="math-exp1" class="math-explanation">
+            <h3>📐 임상/수학 노트: 연쇄적인 간선 완화(Relaxation)</h3>
+            <p>직진로(A)로 직행하면 45분, 진입로(T)로 향하면 총 85분(45+40)이 걸립니다. 하지만 다익스트라 알고리즘은 <b>골목(B) ➔ 중앙 직진로(A) ➔ 고가도로(C) ➔ 진입로(T)</b>라는 'Z'자 형태의 우회로를 탐색합니다. (15 + 10 + 12 + 15 = 52분). 무려 5개의 노드를 모두 밟고 지나가는 것이 가장 빠른 길이라는 사실은, 복잡계 네트워크에서 직관을 배제해야 하는 이유를 완벽히 증명합니다.</p>
+            <button class="btn-next" onclick="nextStage(2)">도심 교차로로 이동</button>
+        </div>
+    </div>
+
+    <!-- STAGE 2 -->
+    <div class="stage-panel" id="stage2">
+        <h2 class="stage-title">🚨 STAGE 2: 6노드 지옥, 병원 입구(M)로!</h2>
+        <p>진입로(T)를 통과했지만 새로운 우회 국도(N)가 추가되어 도로망이 총 6개의 거점으로 늘어났습니다. 함정에 빠지지 말고 병원 입구(M)에 도달하세요.</p>
+        <div class="map-container">
+            <svg viewBox="0 0 500 280">
+                <!-- Edges -->
+                <line x1="50" y1="140" x2="150" y2="60" class="edge" /> <!-- T-C -->
+                <line x1="50" y1="140" x2="150" y2="220" class="edge" /> <!-- T-D -->
+                <line x1="150" y1="220" x2="150" y2="60" class="edge" /> <!-- D-C -->
+                <line x1="150" y1="220" x2="250" y2="140" class="edge" /> <!-- D-F -->
+                <line x1="150" y1="60" x2="250" y2="140" class="edge" /> <!-- C-F -->
+                <line x1="150" y1="60" x2="350" y2="60" class="edge" /> <!-- C-N -->
+                <line x1="250" y1="140" x2="350" y2="60" class="edge" /> <!-- F-N -->
+                <line x1="150" y1="220" x2="450" y2="140" class="edge" /> <!-- D-M -->
+                <line x1="250" y1="140" x2="450" y2="140" class="edge" /> <!-- F-M -->
+                <line x1="350" y1="60" x2="450" y2="140" class="edge" /> <!-- N-M -->
+
+                <!-- Weights -->
+                <rect x="100" y="100" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="100" y="100" class="weight-text" id="w2_TC">30</text> <!-- T-C -->
+                <rect x="100" y="180" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="100" y="180" class="weight-text" id="w2_TD">15</text> <!-- T-D -->
+                <rect x="150" y="140" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="150" y="140" class="weight-text" id="w2_DC">10</text> <!-- D-C -->
+                <rect x="200" y="180" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="200" y="180" class="weight-text" id="w2_DF">20</text> <!-- D-F -->
+                <rect x="200" y="100" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="200" y="100" class="weight-text" id="w2_CF">5</text>  <!-- C-F -->
+                <rect x="250" y="60" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="250" y="60" class="weight-text" id="w2_CN">15</text> <!-- C-N -->
+                <rect x="300" y="100" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="300" y="100" class="weight-text" id="w2_FN">8</text>  <!-- F-N -->
+                <rect x="300" y="180" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="300" y="180" class="weight-text" id="w2_DM">60</text> <!-- D-M -->
+                <rect x="350" y="140" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="350" y="140" class="weight-text" id="w2_FM">25</text> <!-- F-M -->
+                <rect x="400" y="100" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="400" y="100" class="weight-text" id="w2_NM">12</text> <!-- N-M -->
+
+                <!-- Nodes -->
+                <circle cx="50" cy="140" r="18" class="node" /><text x="50" y="140" class="node-text">T</text><text x="50" y="170" class="room-label">도로 진입로</text>
+                <circle cx="150" cy="60" r="18" class="node" /><text x="150" y="60" class="node-text">C</text><text x="150" y="30" class="room-label">고가도로</text>
+                <circle cx="150" cy="220" r="18" class="node" /><text x="150" y="220" class="node-text">D</text><text x="150" y="250" class="room-label">지하차도</text>
+                <circle cx="250" cy="140" r="18" class="node" /><text x="250" y="140" class="node-text">F</text><text x="250" y="170" class="room-label">도심 교차로</text>
+                <circle cx="350" cy="60" r="18" class="node" /><text x="350" y="60" class="node-text">N</text><text x="350" y="30" class="room-label">우회 국도</text>
+                <circle cx="450" cy="140" r="18" class="node" /><text x="450" y="140" class="node-text">M</text><text x="450" y="170" class="room-label">병원 입구</text>
+            </svg>
+        </div>
+        <div class="input-group">
+            <div class="input-box"><label>최단 경로 (예: TDCFNM)</label><input type="text" id="path2" placeholder="대문자 연속 입력"></div>
+            <div class="input-box"><label>최단 소요 시간 (분)</label><input type="number" id="cost2" placeholder="숫자 입력"></div>
+        </div>
+        <button id="btn-submit2" onclick="solveStage(2)">병원 입구 돌파!</button>
+        <div id="feedback2" class="feedback"></div>
+
+        <!-- Math Explanation 2 -->
+        <div id="math-exp2" class="math-explanation">
+            <h3>📐 임상/수학 노트: 전면적인 경로의 역전</h3>
+            <p>이전에는 위(C)에서 아래(D)로 내려갔지만, 이번 설계에서는 <b>아래(D)에서 위(C)로 역류하는 경로</b>가 핵심입니다. T에서 D(15분)로 간 뒤, 위쪽 C(10분)로 꺾어 F(5분)를 거치고 새로운 국도 N(8분)을 타서 M(12분)에 도달합니다. 무려 6개의 노드를 <b>모두 한 번씩 방문</b>하는 거대한 뱀 같은 동선(15+10+5+8+12 = 50분)이 다이렉트 통과(75분)를 압도하는 다이내믹 프로그래밍의 정수입니다.</p>
+            <button class="btn-next" onclick="nextStage(3)">응급의료센터로 최종 진입</button>
+        </div>
+    </div>
+
+    <!-- STAGE 3 -->
+    <div class="stage-panel" id="stage3">
+        <h2 class="stage-title">🔥 STAGE 3: 최종 관문, 뱀처럼 휘감긴 동선!</h2>
+        <p>병원 입구(M)입니다. 캠퍼스 내부에 새로운 '의학연구동(K)'이 추가되었습니다. 이 혼잡한 주차장을 가장 치밀하게 파고들어 응급의료센터(G) 앞까지 구급차를 대세요!</p>
+        <div class="map-container">
+            <svg viewBox="0 0 500 300">
+                <!-- Edges -->
+                <line x1="50" y1="150" x2="160" y2="80" class="edge" /> <!-- M-H -->
+                <line x1="50" y1="150" x2="160" y2="220" class="edge" /> <!-- M-I -->
+                <line x1="160" y1="80" x2="160" y2="220" class="edge" /> <!-- H-I -->
+                <line x1="160" y1="80" x2="280" y2="80" class="edge" /> <!-- H-J -->
+                <line x1="160" y1="220" x2="280" y2="220" class="edge" /> <!-- I-K -->
+                <line x1="160" y1="220" x2="280" y2="80" class="edge" /> <!-- I-J -->
+                <line x1="280" y1="220" x2="280" y2="80" class="edge" /> <!-- K-J -->
+                <line x1="280" y1="220" x2="450" y2="150" class="edge" /> <!-- K-G -->
+                <line x1="280" y1="80" x2="450" y2="150" class="edge" /> <!-- J-G -->
+
+                <!-- Weights -->
+                <rect x="105" y="115" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="105" y="115" class="weight-text" id="w3_MH">10</text> <!-- M-H -->
+                <rect x="105" y="185" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="105" y="185" class="weight-text" id="w3_MI">35</text> <!-- M-I -->
+                <rect x="160" y="150" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="160" y="150" class="weight-text" id="w3_HI">15</text> <!-- H-I -->
+                <rect x="220" y="80" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="220" y="80" class="weight-text" id="w3_HJ">40</text> <!-- H-J -->
+                <rect x="220" y="220" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="220" y="220" class="weight-text" id="w3_IK">12</text> <!-- I-K -->
+                <rect x="220" y="150" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="220" y="150" class="weight-text" id="w3_IJ">30</text> <!-- I-J -->
+                <rect x="280" y="150" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="280" y="150" class="weight-text" id="w3_KJ">8</text>  <!-- K-J -->
+                <rect x="365" y="185" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="365" y="185" class="weight-text" id="w3_KG">40</text> <!-- K-G -->
+                <rect x="365" y="115" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="365" y="115" class="weight-text" id="w3_JG">15</text> <!-- J-G -->
+
+                <!-- Nodes -->
+                <circle cx="50" cy="150" r="18" class="node" /><text x="50" y="150" class="node-text">M</text><text x="50" y="180" class="room-label">병원 입구</text>
+                <circle cx="160" cy="80" r="18" class="node" /><text x="160" y="80" class="node-text">H</text><text x="160" y="50" class="room-label">1주차장</text>
+                <circle cx="160" cy="220" r="18" class="node" /><text x="160" y="220" class="node-text">I</text><text x="160" y="250" class="room-label">외래진료관</text>
+                <circle cx="280" cy="220" r="18" class="node" /><text x="280" y="220" class="node-text">K</text><text x="280" y="250" class="room-label">의학연구동</text>
+                <circle cx="280" cy="80" r="18" class="node" /><text x="280" y="80" class="node-text">J</text><text x="280" y="50" class="room-label">본관</text>
+                <circle cx="450" cy="150" r="18" class="node" /><text x="450" y="150" class="node-text">G</text><text x="450" y="120" class="room-label">응급의료센터</text>
+            </svg>
+        </div>
+        <div class="input-group">
+            <div class="input-box"><label>최단 경로 (예: MHIKJG)</label><input type="text" id="path3" placeholder="대문자 연속 입력"></div>
+            <div class="input-box"><label>최단 소요 시간 (분)</label><input type="number" id="cost3" placeholder="숫자 입력"></div>
+        </div>
+        <button id="btn-submit3" onclick="solveStage(3)">CPR 시행 및 최종 환자 인계!</button>
+        <div id="feedback3" class="feedback"></div>
+
+        <!-- Math Explanation 3 -->
+        <div id="math-exp3" class="math-explanation">
+            <h3>📐 임상/수학 노트: 극한의 탐욕적 선택(Greedy Choice)</h3>
+            <p>이번에는 기존 문제와 정반대로 M에서 위쪽(H, 10분)을 먼저 확정 짓습니다. 그다음 아래(I, 15분)로 내려가고, 다시 K(12분)를 거쳐 위쪽 J(8분)로 치솟은 다음 최종 G(15분)로 골인합니다. 직관으로는 절대 찾을 수 없는 <b>M ➔ H ➔ I ➔ K ➔ J ➔ G (60분)</b>의 파격적인 지그재그 경로입니다. 이렇게 촘촘히 얽힌 그래프에서도 다익스트라 알고리즘은 단 하나의 빈틈없이 절대적 최단 경로를 증명해냅니다.</p>
+            <button class="btn-next" onclick="showFinalSuccess()">응급 인계 결과 확인</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="game-over">
+        <h1 style="color: var(--error-color); font-size: 3em; margin-bottom: 10px;">FLATLINE</h1>
+        <h2 style="color: white;">환자의 바이탈이 소실되었습니다...</h2>
+        <p style="color: #cbd5e1; font-size: 1.1em;">구급차의 경로 계산이 지연되어 교통 체증에 갇히는 바람에 골든타임을 놓치고 말았습니다.</p>
+        <button class="btn-start" style="margin-top:20px; width:auto;" onclick="location.reload()">새로운 환자 발생 - 재출동하기</button>
+    </div>
+
+    <!-- SUCCESS MESSAGE -->
+    <div id="final-success">
+        <h1 style="color: var(--success-color); font-size: 3em; margin-bottom: 10px;">SAVE LIVES!</h1>
+        <h2 style="color: white;">골든타임 내 응급실 인계 성공!</h2>
+        <p style="color: #cbd5e1; font-size: 1.2em; font-weight:bold;">
+            실제 출동 지연 시간: <span id="final-time" style="color: #ef4444; font-size:1.5em;">00:00</span>
+        </p>
+        <p style="color: #cbd5e1; font-size: 1.1em; line-height:1.6;">
+            심화된 복잡도 속에서도 완벽한 다익스트라 알고리즘 연산으로 환자의 생명을 구했습니다.<br>
+            수학이 세상을, 그리고 생명을 구하는 순간을 경험하셨습니다!
+        </p>
+        <button class="btn-next" onclick="showExploration()" style="font-size: 1.1em; padding: 15px 30px;">💡 의학 속 알고리즘 원리 & 진로 연계 탐구 보기</button>
+    </div>
+
+    <!-- EXPLORATION SECTION -->
+    <div id="exploration-section" class="exploration-panel">
+        <h2 style="color: var(--accent-sub); text-align: center; margin-top: 0;">🚀 실생활에서 진로로: 의학과 알고리즘의 융합</h2>
+        <p style="text-align: center; color: #94a3b8; margin-bottom: 30px;">생명을 살리는 수리적 논증과 보건/의학 계열 연계 탐구 주제를 소개합니다.</p>
+
+        <!-- MATHEMATICAL PRINCIPLES SECTION (LaTeX 기반) -->
+        <h3>📐 0. 다익스트라 알고리즘의 핵심 수학적 원리</h3>
+        <p>응급 라우팅 시스템의 심장에는 다음과 같은 수학적 정당성 증명이 내포되어 있습니다. 세특 작성 시 참고하세요!</p>
+        
+        <div class="theory-card">
+            <h4>① 그래프 이론을 활용한 의학/교통 모델링</h4>
+            <p>
+                우리가 해결하려는 문제는 수학적 구조인 <b>유향 가중치 그래프(Directed Weighted Graph)</b> \(G = (V, E)\)로 추상화됩니다.<br>
+                여기서 \(V\)는 점들의 집합(교차로, 병원 건물), \(E\)는 노드를 잇는 도로(간선)입니다.<br>
+                각 간선 \(e \in E\)에 대하여 양의 실수 가중치를 부여하는 함수를 교통 체증 소요 시간 \(w : E \rightarrow \mathbb{R}^+\)로 정의합니다.<br>
+                시작점 \(S \in V\)로부터 목적지 \(v \in V\)에 이르는 경로 \(P = (v_0, v_1, \dots, v_k)\) (단, \(v_0 = S\), \(v_k = v\))의 총 소요시간 \(w(P)\)는 다음과 같습니다.
+                \[ w(P) = \sum_{i=1}^{k} w(v_{i-1}, v_i) \]
+                다익스트라 알고리즘은 이 적분(누적 합) 값 \(w(P)\)가 최소가 되는 최적화 함수를 찾아냅니다.
+            </p>
+        </div>
+
+        <div class="theory-card">
+            <h4>② 간선 완화(Edge Relaxation)와 부등식 정식화</h4>
+            <p>
+                알고리즘 진행 중, 임의의 교차로 \(v\)까지의 누적 예상 소요시간을 \(d[v]\)라 합시다.<br>
+                매 회차마다 인접한 두 정점 \(u, v\)에 대해 다음의 <b>최적화 연산(완화)</b>을 수행합니다.
+                \[ d[v] = \min \big( d[v],\, d[u] + w(u, v) \big) \]
+                만약 부등식 \(d[v] > d[u] + w(u, v)\)가 성립한다면, \(u\)를 거쳐가는 것이 더 빠르다는 의미이므로 \(d[v]\)의 값을 더 작은 값으로 치환합니다. 이 단조 감소 수열의 성질을 통해 변수 \(d[v]\)는 점진적으로 완벽한 최단 시간 \(\delta(S, v)\)로 수렴합니다.
+            </p>
+        </div>
+
+        <div class="theory-card">
+            <h4>③ 귀납법적 증명(Induction)을 통한 완전성</h4>
+            <p>
+                다익스트라는 매 순간 가장 비용이 적은 노드 \(u\)를 선택합니다. 이때 <b>"선택된 \(d[u]\)는 이미 절대적인 최단 거리 \(\delta(S, u)\)임이 보장된다"</b>는 사실을 수학적 귀납법과 귀류법으로 증명할 수 있습니다.<br>
+                만약 더 짧은 미지의 우회 경로를 통해 \(y\)를 거쳐 \(u\)로 간다고 가정할 때 (\(d[y] \le \delta(S, u) < d[u]\)), 알고리즘의 '가장 작은 값을 먼저 선택한다(Greedy)'는 원칙에 의해 \(u\)보다 \(y\)가 먼저 선택되었어야만 한다는 <b>모순(Contradiction)</b>이 발생합니다. 따라서 구급차의 라우팅 결과는 항상 수학적 참(True)을 보장합니다.
+            </p>
+        </div>
+
+        <h3>🌍 1. 의학/보건 분야에서의 알고리즘 유용성</h3>
+        <ul>
+            <li><b>스마트 응급의료체계(EMS):</b> 단순히 거리가 짧은 병원이 아니라, 실시간 교통 상황(T-map 데이터 연동)과 각 권역 센터의 응급실 병상 잔여 개수(동적 가중치)를 결합 연산하여 환자를 이송합니다.</li>
+            <li><b>수술용 네비게이션 로봇:</b> 뇌종양 수술 등에서 주요 신경과 혈관(가중치 무한대=절대 피해갈 곳)을 건드리지 않고 병변에 도달하는 최단 궤적을 3D 그래프로 스캔하여 집도의를 안내합니다.</li>
+        </ul>
+
+        <h3>🎓 2. 계열별 학생 맞춤 세특 탐구 과제 가이드</h3>
+        
+        <div class="career-card">
+            <h4>🧬 의대 / 생명과학 / 간호학과</h4>
+            <span class="tag tag-med">의학</span><span class="tag tag-math">수학</span>
+            <p><b>탐구 과제:</b> "관상동맥 폐색 시 측부순환(Collateral Circulation) 발달 기전과 다익스트라 우회 경로의 수학적 유사성 연구"<br>
+            심장의 주 혈관이 막혔을 때(가중치 \(\infty\)) 미세 혈관들이 확장되어 새로운 우회로를 형성하는 인체의 생존 기전을 네트워크 그래프의 Relaxation(완화) 과정과 비유하여 생명 현상의 합리성을 고찰.</p>
+        </div>
+
+        <div class="career-card">
+            <h4>🚑 보건행정 / 응급구조 / 사회복지</h4>
+            <span class="tag tag-soc">사회/보건</span><span class="tag tag-info">데이터</span>
+            <p><b>탐구 과제:</b> "응급실 뺑뺑이(수용 거부) 문제 해결을 위한 다중 가중치 기반 동적 최단 경로 모델 제안"<br>
+            교통 소요 시간뿐만 아니라 '해당 병원의 특정 전문의 당직 여부', '수술실 가동률' 등을 다차원 행렬의 가중치로 병합(A* 알고리즘 응용)하여, 환자 맞춤형 최적 이송 병원 산출 모델링.</p>
+        </div>
+
+        <div class="career-card">
+            <h4>💻 의료 IT / 바이오메디컬 공학</h4>
+            <span class="tag tag-info">알고리즘</span><span class="tag tag-math">수학</span>
+            <p><b>탐구 과제:</b> "인체 신경망의 시냅스 전달 속도와 Dijkstra 알고리즘의 시간 복잡도(Time Complexity) 비교"<br>
+            뇌 신경회로망(Neural Network)에서 신호가 전달되는 저항 경로와 다익스트라의 탐색 속도( \(\mathcal{O}(E \log V)\) )를 비교 분석하고, 이를 AI 질병 진단 모델의 레이어 최적화에 적용하는 방안 탐구.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+    // --- Dynamic Graph & Dijkstra Logic ---
+    let stages = {
+        1: { start: 'S', end: 'T', edges: { SA: 45, SB: 15, BA: 10, BC: 35, AC: 12, AT: 40, CT: 15 }, graph: {} },
+        2: { start: 'T', end: 'M', edges: { TC: 30, TD: 15, DC: 10, DF: 20, CF: 5, CN: 15, FN: 8, DM: 60, FM: 25, NM: 12 }, graph: {} },
+        3: { start: 'M', end: 'G', edges: { MH: 10, MI: 35, HI: 15, HJ: 40, IK: 12, IJ: 30, KJ: 8, KG: 40, JG: 15 }, graph: {} }
+    };
+    
+    let answers = {
+        1: { path: '', cost: 0 },
+        2: { path: '', cost: 0 },
+        3: { path: '', cost: 0 }
+    };
+
+    function initRandomWeights() {
+        for (let stageNum = 1; stageNum <= 3; stageNum++) {
+            let stage = stages[stageNum];
+            let g = {};
+            for (let edge in stage.edges) {
+                let u = edge[0];
+                let v = edge[1];
+                let orig = stage.edges[edge];
+                // Randomly vary between -7 to +7, but ensure min is 1
+                let diff = Math.floor(Math.random() * 15) - 7;
+                let newWeight = Math.max(1, orig + diff);
+                
+                // Update DOM
+                let el = document.getElementById(`w${stageNum}_${edge}`);
+                if (el) el.textContent = newWeight;
+                
+                // Build graph
+                if (!g[u]) g[u] = {};
+                g[u][v] = newWeight;
+            }
+            stage.graph = g;
+            
+            answers[stageNum] = runDijkstra(g, stage.start, stage.end);
+            console.log(`Stage ${stageNum} Answer:`, answers[stageNum]);
+        }
+    }
+
+    function runDijkstra(graph, start, end) {
+        let dist = {};
+        let prev = {};
+        let q = new Set();
+        
+        let allNodes = new Set([start, end]);
+        for (let u in graph) {
+            allNodes.add(u);
+            for (let v in graph[u]) allNodes.add(v);
+        }
+        
+        for (let node of allNodes) {
+            dist[node] = Infinity;
+            prev[node] = null;
+            q.add(node);
+        }
+        dist[start] = 0;
+        
+        while (q.size > 0) {
+            let u = null;
+            for (let node of q) {
+                if (u === null || dist[node] < dist[u]) {
+                    u = node;
+                }
+            }
+            
+            q.delete(u);
+            if (dist[u] === Infinity || u === end) break;
+            
+            if (graph[u]) {
+                for (let v in graph[u]) {
+                    if (q.has(v)) {
+                        let alt = dist[u] + graph[u][v];
+                        if (alt < dist[v]) {
+                            dist[v] = alt;
+                            prev[v] = u;
+                        }
+                    }
+                }
+            }
+        }
+        
+        let path = [];
+        let u = end;
+        while (u) {
+            path.unshift(u);
+            u = prev[u];
+        }
+        return { path: path.join(''), cost: dist[end] };
+    }
+    
+    document.addEventListener("DOMContentLoaded", initRandomWeights);
+
+    let timerInterval;
+    let startTime;
+    let errorsCount = 0;
+    const MAX_ERRORS = 2; // 기회 2번
+
+    function startGame() {
+        document.getElementById('intro-screen').style.display = 'none';
+        document.getElementById('status-bar').style.display = 'flex';
+        document.getElementById('stage1').style.display = 'block';
+        
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+        const now = Date.now();
+        const diff = new Date(now - startTime);
+        const m = String(diff.getMinutes()).padStart(2, '0');
+        const s = String(diff.getSeconds()).padStart(2, '0');
+        document.getElementById('time-display').innerText = `${m}:${s}`;
+    }
+
+    function updateLives() {
+        const display = document.getElementById('lives-display');
+        if (errorsCount === 0) display.innerText = "🟢🟢 (안정)";
+        else if (errorsCount === 1) display.innerText = "🔴🟢 (위험: 바이탈 저하!)";
+        else display.innerText = "🔴🔴 (소실됨)";
+    }
+
+    function handleMistake(feedback, customMsg) {
+        errorsCount++;
+        updateLives();
+        
+        if (errorsCount >= MAX_ERRORS) {
+            clearInterval(timerInterval);
+            document.querySelectorAll('.stage-panel').forEach(p => p.style.display = 'none');
+            document.getElementById('status-bar').style.display = 'none';
+            document.getElementById('game-over').style.display = 'block';
+        } else {
+            feedback.innerHTML = customMsg + "<br><br>⚠️ <b>바이탈 경고: 계산 지연으로 환자의 상태가 악화되었습니다! 한 번 더 실수하면 실패합니다.</b>";
+            feedback.className = "feedback error";
+        }
+    }
+
+    function solveStage(stageNum) {
+        const ansPath = answers[stageNum].path;
+        const ansCost = String(answers[stageNum].cost);
+        const path = document.getElementById(`path${stageNum}`).value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+        const cost = document.getElementById(`cost${stageNum}`).value.trim();
+        const feedback = document.getElementById(`feedback${stageNum}`);
+
+        if (path === ansPath && cost === ansCost) {
+            feedback.className = "feedback success";
+            feedback.innerHTML = "정답입니다! 성공적으로 해당 구간을 돌파했습니다.";
+            
+            // 제출 버튼 비활성화 및 해설 공개
+            document.getElementById(`btn-submit${stageNum}`).disabled = true;
+            document.getElementById(`math-exp${stageNum}`).style.display = "block";
+        } else {
+            // 스테이지별 피드백 메세지 커스텀
+            let msg = "오류 발생! 노드가 추가되었습니다. 모든 경로를 다시 갱신해 보세요.";
+            if (stageNum === 1 && path.length < 5) msg = "눈에 띄는 큰 길이 함정입니다! 총 5개의 모든 노드를 밟고 우회하는 Z자 경로를 찾아보세요.";
+            if (stageNum === 2 && path.length < 6) msg = "이전과 정반대로 설계되었습니다. D에서 시작해 위(C)로 역류하며 무려 6개의 노드를 지그재그로 타야 합니다!";
+            if (stageNum === 3 && path.length < 6) msg = "위, 아래, 다시 위! M에서 시작해 주차장(H)을 먼저 들르고 뱀처럼 꼬아 들어가는 동선을 계산하세요.";
+            
+            handleMistake(feedback, msg);
+        }
+    }
+
+    function nextStage(nextNum) {
+        const currentStage = document.getElementById(`stage${nextNum - 1}`);
+        const nextStageEl = document.getElementById(`stage${nextNum}`);
+        
+        currentStage.style.opacity = "0.4";
+        nextStageEl.style.display = "block";
+        nextStageEl.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showFinalSuccess() {
+        clearInterval(timerInterval);
+        document.getElementById('stage3').style.opacity = "0.4";
+        document.getElementById('status-bar').style.display = 'none';
+        
+        const finalTime = document.getElementById('time-display').innerText;
+        document.getElementById('final-time').innerText = finalTime;
+        
+        document.getElementById('final-success').style.display = "block";
+        document.getElementById('final-success').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showExploration() {
+        const exploreSection = document.getElementById('exploration-section');
+        exploreSection.style.display = 'block';
+        exploreSection.scrollIntoView({ behavior: 'smooth' });
+        
+        // MathJax 렌더링 호출
+        if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise();
+        }
+    }
+</script>
+
+</body>
+</html>

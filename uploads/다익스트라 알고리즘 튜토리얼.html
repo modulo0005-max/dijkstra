@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>방탈출 튜토리얼: 다익스트라 알고리즘</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #00ffcc;
+            --box-bg: #1e1e1e;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 700px;
+            width: 100%;
+        }
+        h1 {
+            color: var(--accent-color);
+            text-align: center;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #ffffff;
+            margin-top: 30px;
+        }
+        p {
+            line-height: 1.6;
+        }
+        .concept-box {
+            background-color: var(--box-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            margin-bottom: 20px;
+        }
+        .quiz-section {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #444;
+        }
+        svg {
+            display: block;
+            margin: 15px auto;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+        }
+        .node-circle { fill: #333; stroke: var(--accent-color); stroke-width: 2; }
+        .node-text { fill: #fff; font-weight: bold; font-size: 16px; text-anchor: middle; dominant-baseline: central; }
+        .edge { stroke: #888; stroke-width: 2; }
+        .weight-text { fill: #00ffcc; font-size: 14px; font-weight: bold; }
+        
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background-color: #121212;
+            color: #fff;
+            margin-right: 10px;
+            width: 150px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #00cca3;
+        }
+        .feedback {
+            margin-top: 10px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+        .success { color: #00ffcc; }
+        .error { color: #ff5555; }
+        #ticket-section {
+            display: none;
+            margin-top: 40px;
+            padding: 20px;
+            background: linear-gradient(45deg, #004d40, #000000);
+            text-align: center;
+            border-radius: 8px;
+            border: 2px dashed var(--accent-color);
+            animation: glow 1.5s infinite alternate;
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 10px var(--accent-color); }
+            to { box-shadow: 0 0 20px var(--accent-color); }
+        }
+    </style>
+</head>
+<body>
+
+<a href="../시뮬레이터 허브.dc.html" style="position:fixed;top:16px;left:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(0,0,0,0.55);color:var(--accent-color);border:1px solid var(--accent-color);border-radius:30px;font-family:'Pretendard',sans-serif;font-size:14px;font-weight:700;text-decoration:none;backdrop-filter:blur(6px);">← 처음으로</a>
+
+<div class="container">
+    <h1>방탈출 튜토리얼: 어둠 속의 네비게이션</h1>
+    
+    <p>우리가 일상에서 매일 쓰는 지도 앱이나 자동차 네비게이션은 어떻게 수많은 길 중에서 <b>'가장 빠른 길'</b>을 순식간에 찾아낼까요? 그 비밀의 열쇠가 바로 <b>다익스트라 알고리즘(Dijkstra's Algorithm)</b>에 있습니다. 이 원리를 이해해야만 곧 시작될 방탈출 게임에서 무사히 빠져나갈 수 있습니다!</p>
+
+    <div class="concept-box">
+        <h2>🔑 3가지 핵심 암호 (개념)</h2>
+        <ul>
+            <li><b>노드 (Node):</b> 여러분이 머무는 '방'이나 교차로를 의미합니다. (A, B, C 등)</li>
+            <li><b>간선 (Edge)과 가중치 (Weight):</b> 방과 방을 연결하는 '통로'입니다. 가중치는 이 통로를 지나는 데 걸리는 <b>'시간'이나 '비용'</b>을 뜻합니다.</li>
+            <li><b>최단 경로 (Shortest Path):</b> 시작 방에서 탈출구까지 <b>가장 비용(숫자의 합)이 적게 드는 길</b>입니다.</li>
+        </ul>
+    </div>
+
+    <div class="quiz-section" id="quiz1-section">
+        <h2>🟢 [Level 1] 기초 훈련: 돌아가는 것이 더 빠를 수도 있다?</h2>
+        <p>시작점(S)에서 도착점(E)으로 가야 합니다. 눈앞에 바로 보이는 길만 믿지 말고 숫자를 계산해 보세요!</p>
+        
+        <svg width="300" height="200">
+            <line x1="50" y1="100" x2="150" y2="40" class="edge" /> <line x1="150" y1="40" x2="250" y2="100" class="edge" /> <line x1="50" y1="100" x2="250" y2="100" class="edge" /> <text x="90" y="60" class="weight-text">2</text>
+            <text x="210" y="60" class="weight-text">3</text>
+            <text x="150" y="115" class="weight-text">6</text>
+
+            <circle cx="50" cy="100" r="15" class="node-circle" />
+            <text x="50" y="100" class="node-text">S</text>
+            
+            <circle cx="150" cy="40" r="15" class="node-circle" />
+            <text x="150" y="40" class="node-text">A</text>
+            
+            <circle cx="250" cy="100" r="15" class="node-circle" />
+            <text x="250" y="100" class="node-text">E</text>
+        </svg>
+
+        <p><b>Q: S에서 E로 가는 '최단 경로의 총비용(가중치 합)'은 얼마일까요?</b></p>
+        <input type="number" id="answer1" placeholder="숫자 입력">
+        <button onclick="checkLevel1()">정답 확인</button>
+        <div id="feedback1" class="feedback"></div>
+    </div>
+
+    <div class="quiz-section" id="quiz2-section" style="display: none;">
+        <h2>🟡 [Level 2] 심화 훈련: AI처럼 길 찾기</h2>
+        <p>복잡한 네트워크입니다. 비용이 적은 경로를 차근차근 확정해 나가는 다익스트라의 시선으로 길을 찾아보세요.</p>
+        
+        <svg width="400" height="250">
+            <line x1="50" y1="125" x2="150" y2="50" class="edge" /> <line x1="50" y1="125" x2="150" y2="200" class="edge" /> <line x1="150" y1="200" x2="150" y2="50" class="edge" /> <line x1="150" y1="50" x2="300" y2="125" class="edge" /> <line x1="150" y1="200" x2="300" y2="125" class="edge" /> <text x="90" y="80" class="weight-text">4</text>
+            <text x="90" y="180" class="weight-text">2</text>
+            <text x="135" y="125" class="weight-text">1</text>
+            <text x="220" y="80" class="weight-text">3</text>
+            <text x="220" y="180" class="weight-text">7</text>
+
+            <circle cx="50" cy="125" r="15" class="node-circle" />
+            <text x="50" y="125" class="node-text">S</text>
+            
+            <circle cx="150" cy="50" r="15" class="node-circle" />
+            <text x="150" y="50" class="node-text">A</text>
+
+            <circle cx="150" cy="200" r="15" class="node-circle" />
+            <text x="150" y="200" class="node-text">B</text>
+            
+            <circle cx="300" cy="125" r="15" class="node-circle" />
+            <text x="300" y="125" class="node-text">E</text>
+        </svg>
+
+        <p><b>Q: S에서 E로 가는 가장 적은 비용의 '경로'를 알파벳 순서대로 적어보세요. (예: SBE)</b></p>
+        <input type="text" id="answer2" placeholder="대문자로 띄어쓰기 없이">
+        <button onclick="checkLevel2()">정답 확인</button>
+        <div id="feedback2" class="feedback"></div>
+    </div>
+
+    <div id="ticket-section">
+        <h2 style="margin-top:0;">🎉 튜토리얼 완료!</h2>
+        <p>다익스트라 알고리즘의 핵심을 완벽하게 이해하셨습니다.<br>이제 실제 방탈출 게임 부스에 입장하실 자격이 주어졌습니다!</p>
+        <h1 style="color: #fff; border: none;">[ 부스 입장권 획득 ]</h1>
+    </div>
+
+</div>
+
+<script>
+    // 레벨 1 정답 확인 (정답: 5)
+    function checkLevel1() {
+        const ans = document.getElementById("answer1").value;
+        const feedback = document.getElementById("feedback1");
+        
+        if (ans === "5") {
+            feedback.innerHTML = "정답입니다! 직통 길(6)보다 A를 거쳐 가는 길(2+3=5)이 더 빠르죠!";
+            feedback.className = "feedback success";
+            document.getElementById("quiz2-section").style.display = "block"; // 다음 레벨 오픈
+        } else {
+            feedback.innerHTML = "오답입니다. 경로의 숫자를 다시 한 번 더해보세요!";
+            feedback.className = "feedback error";
+        }
+    }
+
+    // 레벨 2 정답 확인 (정답: SBAE)
+    function checkLevel2() {
+        // 대소문자 구분 없이 처리, 공백 제거
+        const ans = document.getElementById("answer2").value.trim().toUpperCase();
+        const feedback = document.getElementById("feedback2");
+        
+        if (ans === "SBAE") {
+            feedback.innerHTML = "정확합니다! S -> B(2) -> A(1) -> E(3) 경로가 총합 6으로 가장 비용이 적습니다.";
+            feedback.className = "feedback success";
+            document.getElementById("ticket-section").style.display = "block"; // 입장권 오픈
+        } else {
+            feedback.innerHTML = "오답입니다. S에서 바로 A로 가는 것(4)과 B를 거쳐 A로 가는 것(2+1=3) 중 어느 것이 더 유리할지 생각해 보세요.";
+            feedback.className = "feedback error";
+        }
+    }
+</script>
+
+</body>
+</html>

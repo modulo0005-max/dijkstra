@@ -1,0 +1,12 @@
+{
+  "name": "math-simulator-portal",
+  "version": "1.0.0",
+  "description": "수학 시뮬레이터 포탈 페이지",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "serve": "^14.2.1"
+  }
+}

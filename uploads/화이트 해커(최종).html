@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>화이트해커 대탈출: 데이터 유출을 차단하라!</title>
+    <!-- 보안 위험: polyfill.io 링크 제거됨 -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --bg-dark: #050a05;
+            --panel-bg: #0a110a;
+            --text-main: #e2e8f0;
+            --accent-glow: #10b981; /* 네온 그린 (해커 테마) */
+            --accent-sub: #059669;
+            --error-color: #ef4444;
+            --success-color: #34d399;
+            --node-color: #022c22;
+            --edge-color: #334155;
+            --math-bg: #064e3b;
+            --theory-bg: #020617; 
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Courier New', Courier, monospace, 'Pretendard', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .game-container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid var(--accent-glow);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: var(--accent-glow);
+            text-shadow: 0 0 15px rgba(16, 185, 129, 0.7);
+            margin: 0;
+            font-size: 2.2em;
+            letter-spacing: 2px;
+        }
+
+        /* Status Bar (Timer & Lives) */
+        .status-bar {
+            display: none;
+            justify-content: space-between;
+            background-color: #000;
+            padding: 15px 25px;
+            border-radius: 4px;
+            border: 1px solid var(--accent-glow);
+            margin-bottom: 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+        .timer { color: #34d399; }
+        .lives { color: #ef4444; animation: glitch 2s infinite; }
+
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        .story-box {
+            background: #020617;
+            border-left: 4px solid var(--accent-glow);
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        .stage-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid #065f46;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            display: none;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        .stage-title {
+            color: var(--accent-glow);
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .map-container {
+            background-color: #000;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            border: 1px solid #1e293b;
+        }
+
+        svg {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            overflow: visible;
+        }
+
+        /* SVG Styles */
+        .edge { stroke: var(--edge-color); stroke-width: 3; stroke-dasharray: 4,4; }
+        .node { fill: var(--node-color); stroke: var(--accent-glow); stroke-width: 3; cursor: pointer; transition: 0.3s; }
+        .node:hover { fill: #059669; }
+        .node-trap { fill: #450a0a; stroke: #ef4444; } /* 방화벽 노드 디자인 */
+        .node-text { fill: #fff; font-weight: bold; font-size: 16px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+        .weight-bg { fill: #000; opacity: 0.8; }
+        .weight-text { fill: #a7f3d0; font-size: 13px; font-weight: bold; text-anchor: middle; dominant-baseline: central; }
+        .room-label { fill: #64748b; font-size: 12px; text-anchor: middle; }
+        .trap-label { fill: #fca5a5; font-size: 12px; text-anchor: middle; font-weight: bold; }
+
+        /* Inputs and Buttons */
+        .input-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .input-box { flex: 1; min-width: 200px; }
+        .input-box label { display: block; margin-bottom: 5px; font-size: 14px; color: #94a3b8; }
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 12px; box-sizing: border-box; border-radius: 4px;
+            border: 1px solid #059669; background-color: #000; color: var(--accent-glow); font-size: 16px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        input:focus { outline: none; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+
+        button {
+            width: 100%; padding: 15px; background: #064e3b;
+            color: #34d399; border: 1px solid var(--accent-glow); border-radius: 4px; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: 0.3s; margin-top: 10px; font-family: 'Pretendard', sans-serif;
+        }
+        button:hover { background: var(--accent-glow); color: #000; transform: translateY(-2px); }
+        button:disabled { background: #1e293b; color: #64748b; border-color: #334155; cursor: not-allowed; transform: none; }
+        
+        .btn-start { background: #000; color: var(--accent-glow); font-size: 1.2em; padding: 20px;}
+        .btn-start:hover { background: var(--accent-glow); color: #000; }
+        
+        .feedback { margin-top: 15px; padding: 15px; border-radius: 4px; font-weight: normal; display: none; line-height: 1.5; font-size: 0.95em; }
+        .feedback.error { display: block; background-color: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid var(--error-color); }
+        .feedback.success { display: block; background-color: rgba(16, 185, 129, 0.1); color: var(--success-color); border: 1px solid var(--success-color); }
+
+        /* Math Explanation Box */
+        .math-explanation {
+            display: none; margin-top: 20px; padding: 20px;
+            background-color: var(--math-bg); border-left: 4px solid var(--accent-glow);
+            border-radius: 4px; color: #d1fae5; font-size: 0.95em; line-height: 1.6;
+        }
+        .math-explanation h3 { color: #6ee7b7; margin-top: 0; display: flex; align-items: center; gap: 8px; }
+
+        /* End Screens */
+        #final-success, #game-over { display: none; text-align: center; padding: 50px 20px; border-radius: 8px; margin-top: 30px; }
+        #final-success { background: #022c22; border: 2px solid var(--success-color); }
+        #game-over { background: #450a0a; border: 2px solid var(--error-color); }
+
+        /* Exploration Section Styles */
+        .exploration-panel {
+            background-color: var(--theory-bg);
+            border: 1px solid var(--accent-sub);
+            border-radius: 8px;
+            padding: 30px;
+            margin-top: 30px;
+            display: none;
+            line-height: 1.7;
+            font-family: 'Pretendard', sans-serif;
+        }
+        .exploration-panel h3 { color: var(--accent-glow); border-bottom: 1px dashed #334155; padding-bottom: 10px; margin-top: 30px; }
+        
+        .theory-card {
+            background-color: #0f172a; border-left: 4px solid var(--accent-glow);
+            padding: 20px; margin-bottom: 20px; border-radius: 4px; color: #e2e8f0;
+        }
+        .theory-card h4 { margin: 0 0 12px 0; color: #6ee7b7; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+
+<a href="../시뮬레이터 허브.dc.html" style="position:fixed;top:16px;left:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(0,0,0,0.55);color:var(--accent-glow);border:1px solid var(--accent-glow);border-radius:30px;font-family:'Courier New',monospace;font-size:14px;font-weight:700;text-decoration:none;backdrop-filter:blur(6px);">← 처음으로</a>
+
+<div class="game-container">
+    <div class="header">
+        <h1>[ SYSTEM.OVERRIDE ]</h1>
+        <p style="font-family: 'Courier New', Courier, monospace;">> OPERATION: ROUTING_PROTOCOL_INIT</p>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="intro-screen" class="story-box">
+        <b>[경고: 기밀 서버 무단 접근 감지]</b><br><br>
+        국가 기밀 서버(S)에 침투한 악성 바이러스가 해외 해커의 본거지(E)로 1급 기밀 데이터를 빼돌리려 하고 있습니다. 화이트해커인 당신은 바이러스의 데이터 전송 경로를 추적하여, 그들이 도달하기 전에 가장 빠른 경로로 '백신 패치'를 전송해 길목을 차단해야 합니다.<br><br>
+        <b>간선의 숫자(가중치)는 네트워크 지연 시간 (Ping Latency, 단위: ms)입니다.</b><br><br>
+        ⚠️ <b>작전 주의사항:</b>
+        <ul style="color: #cbd5e1;">
+            <li>지정된 출발 서버에서 타겟 서버까지 <b>가장 낮은 Ping(ms)을 가지는 라우팅 경로(알파벳 순서)</b>를 산출하세요.</li>
+            <li>백신 전송 실패(오답)가 <b>2번 누적되면</b> 해커가 데이터를 모두 다운로드하여 시스템이 완전히 파괴됩니다.</li>
+            <li>네트워크망 어딘가에 강력한 <b>'방화벽(Firewall)'</b>이 설치되어 있습니다. 이곳을 통과하면 보안 검사로 인해 핑이 엄청나게 치솟습니다!</li>
+        </ul>
+        <button class="btn-start" onclick="startGame()">> ./EXECUTE_VACCINE_ROUTING (작전 개시)</button>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="status-bar">
+        <div class="timer">Uptime: <span id="time-display">00:00</span></div>
+        <div class="lives">보안 상태: <span id="lives-display">[ 안정 - 데이터 유출 0% ]</span></div>
+    </div>
+
+    <!-- STAGE 1 -->
+    <div class="stage-panel" id="stage1">
+        <h2 class="stage-title">Terminal 1: 로컬 네트워크망 침투</h2>
+        <p>시작 서버(S)에서 게이트웨이(T)까지 패치를 보내야 합니다. 다이렉트 회선은 노후화되어 핑이 높습니다. 프록시 서버들을 거쳐 최적의 우회로를 찾으세요.</p>
+        <div class="map-container">
+            <svg viewBox="0 0 400 250">
+                <!-- Edges -->
+                <line x1="50" y1="125" x2="150" y2="50" class="edge" /> <!-- S-A -->
+                <line x1="50" y1="125" x2="150" y2="200" class="edge" /> <!-- S-B -->
+                <line x1="150" y1="200" x2="150" y2="50" class="edge" /> <!-- B-A -->
+                <line x1="150" y1="200" x2="250" y2="125" class="edge" /> <!-- B-C -->
+                <line x1="150" y1="50" x2="250" y2="125" class="edge" /> <!-- A-C -->
+                <line x1="150" y1="50" x2="350" y2="125" class="edge" /> <!-- A-T -->
+                <line x1="250" y1="125" x2="350" y2="125" class="edge" /> <!-- C-T -->
+
+                <!-- Weights -->
+                <rect x="90" y="77" width="30" height="20" rx="4" class="weight-bg" transform="translate(-15, -10)" /><text x="90" y="77" class="weight-text" id="w1_SA">120</text> <!-- S-A -->
+                <rect x="90" y="173" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="90" y="173" class="weight-text" id="w1_SB">15</text> <!-- S-B -->
+                <rect x="150" y="125" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="150" y="125" class="weight-text" id="w1_BA">35</text> <!-- B-A -->
+                <rect x="200" y="173" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="200" y="173" class="weight-text" id="w1_BC">80</text> <!-- B-C -->
+                <rect x="200" y="77" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="200" y="77" class="weight-text" id="w1_AC">20</text> <!-- A-C -->
+                <rect x="250" y="77" width="30" height="20" rx="4" class="weight-bg" transform="translate(-15, -10)" /><text x="250" y="77" class="weight-text" id="w1_AT">150</text> <!-- A-T -->
+                <rect x="300" y="125" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="300" y="125" class="weight-text" id="w1_CT">40</text> <!-- C-T -->
+
+                <!-- Nodes -->
+                <circle cx="50" cy="125" r="18" class="node" /><text x="50" y="125" class="node-text">S</text><text x="50" y="155" class="room-label">Main Server</text>
+                <circle cx="150" cy="50" r="18" class="node" /><text x="150" y="50" class="node-text">A</text><text x="150" y="20" class="room-label">Router 1</text>
+                <circle cx="150" cy="200" r="18" class="node" /><text x="150" y="200" class="node-text">B</text><text x="150" y="230" class="room-label">Proxy</text>
+                <circle cx="250" cy="125" r="18" class="node" /><text x="250" y="125" class="node-text">C</text><text x="250" y="155" class="room-label">Switch</text>
+                <circle cx="350" cy="125" r="18" class="node" /><text x="350" y="125" class="node-text">T</text><text x="350" y="155" class="room-label">Gateway</text>
+            </svg>
+        </div>
+        <div class="input-group">
+            <div class="input-box"><label>> ROUTE_PATH (ex: SACT)</label><input type="text" id="path1" placeholder="대문자 연속 입력"></div>
+            <div class="input-box"><label>> TOTAL_PING (ms)</label><input type="number" id="cost1" placeholder="숫자 입력"></div>
+        </div>
+        <button id="btn-submit1" onclick="solveStage(1)">패킷 전송 (Send Packet)</button>
+        <div id="feedback1" class="feedback"></div>
+        
+        <div id="math-exp1" class="math-explanation">
+            <h3>[ SYSTEM.LOG ] 라우팅 최적화 성공</h3>
+            <p>다이렉트 연결인 S ➔ A (120ms) 보다 프록시 B를 거치는 S ➔ B ➔ A (15+35=50ms)가 훨씬 빠릅니다. 또한 B에서 C로 바로 가는 것(80ms)보다 A를 한 번 더 거치는 B ➔ A ➔ C (35+20=55ms)가 더 빠르죠. 결국 <b>S ➔ B ➔ A ➔ C ➔ T (110ms)</b>라는 복잡한 우회로가 가장 낮은 지연시간을 기록합니다. 컴퓨터 네트워크(OSPF)가 최단 경로를 찾는 수학적 원리입니다.</p>
+            <button class="btn-next" onclick="nextStage(2)">> 다음 네트워크 노드로 접속</button>
+        </div>
+    </div>
+
+    <!-- STAGE 2 -->
+    <div class="stage-panel" id="stage2">
+        <h2 class="stage-title">Terminal 2: 악명 높은 방화벽(Firewall) 구간</h2>
+        <p>게이트웨이(T)를 넘어 목표 서버(M) 근처에 도달했습니다. 하지만 중간에 <b>강력한 딥 패킷 인스펙션 방화벽(F)</b>이 감지되었습니다. 방화벽을 통과하면 지연시간이 폭증합니다. 트래픽을 안전하게 우회시키세요!</p>
+        <div class="map-container">
+            <svg viewBox="0 0 500 280">
+                <!-- Edges -->
+                <line x1="50" y1="140" x2="150" y2="60" class="edge" /> <!-- T-C -->
+                <line x1="50" y1="140" x2="150" y2="220" class="edge" /> <!-- T-D -->
+                <line x1="150" y1="60" x2="250" y2="140" class="edge" /> <!-- C-F -->
+                <line x1="150" y1="60" x2="150" y2="220" class="edge" /> <!-- C-D -->
+                <line x1="150" y1="60" x2="350" y2="60" class="edge" /> <!-- C-E -->
+                <line x1="150" y1="220" x2="350" y2="220" class="edge" /> <!-- D-N -->
+                <line x1="250" y1="140" x2="450" y2="140" class="edge" /> <!-- F-M -->
+                <line x1="250" y1="140" x2="350" y2="60" class="edge" /> <!-- F-E -->
+                <line x1="150" y1="220" x2="450" y2="140" class="edge" /> <!-- D-M -->
+                <line x1="350" y1="60" x2="450" y2="140" class="edge" /> <!-- E-M -->
+                <line x1="350" y1="220" x2="450" y2="140" class="edge" /> <!-- N-M -->
+
+                <!-- Weights -->
+                <rect x="100" y="100" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="100" y="100" class="weight-text" id="w2_TC">45</text> <!-- T-C -->
+                <rect x="100" y="180" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="100" y="180" class="weight-text" id="w2_TD">80</text> <!-- T-D -->
+                <rect x="200" y="100" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="200" y="100" class="weight-text" id="w2_CF">10</text> <!-- C-F -->
+                <rect x="150" y="140" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="150" y="140" class="weight-text" id="w2_DC">25</text> <!-- C-D -->
+                <rect x="250" y="60" width="30" height="20" rx="4" class="weight-bg" transform="translate(-15, -10)" /><text x="250" y="60" class="weight-text" id="w2_CE">120</text> <!-- C-E -->
+                <rect x="250" y="220" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="250" y="220" class="weight-text" id="w2_DN">30</text> <!-- D-N -->
+                <rect x="350" y="140" width="30" height="20" rx="4" class="weight-bg" transform="translate(-15, -10)" /><text x="350" y="140" class="weight-text">250</text> <!-- F-M -->
+                <rect x="300" y="100" width="30" height="20" rx="4" class="weight-bg" transform="translate(-15, -10)" /><text x="300" y="100" class="weight-text" id="w2_FE">220</text> <!-- F-E -->
+                <rect x="300" y="180" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="300" y="180" class="weight-text" id="w2_DM">90</text> <!-- D-M -->
+                <rect x="400" y="100" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="400" y="100" class="weight-text" id="w2_EM">80</text> <!-- E-M -->
+                <rect x="400" y="180" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="400" y="180" class="weight-text" id="w2_NM">15</text> <!-- N-M -->
+
+                <!-- Nodes -->
+                <circle cx="50" cy="140" r="18" class="node" /><text x="50" y="140" class="node-text">T</text><text x="50" y="170" class="room-label">Gateway</text>
+                <circle cx="150" cy="60" r="18" class="node" /><text x="150" y="60" class="node-text">C</text><text x="150" y="30" class="room-label">Node 1</text>
+                <circle cx="150" cy="220" r="18" class="node" /><text x="150" y="220" class="node-text">D</text><text x="150" y="250" class="room-label">Node 2</text>
+                <circle cx="250" cy="140" r="22" class="node node-trap" /><text x="250" y="140" class="node-text" style="fill:#ef4444;">F</text><text x="250" y="175" class="trap-label">FIREWALL</text>
+                <circle cx="350" cy="60" r="18" class="node" /><text x="350" y="60" class="node-text">E</text><text x="350" y="30" class="room-label">Node 3</text>
+                <circle cx="350" cy="220" r="18" class="node" /><text x="350" y="220" class="node-text">N</text><text x="350" y="250" class="room-label">Node 4</text>
+                <circle cx="450" cy="140" r="18" class="node" /><text x="450" y="140" class="node-text">M</text><text x="450" y="170" class="room-label">Core Entry</text>
+            </svg>
+        </div>
+        <div class="input-group">
+            <div class="input-box"><label>> ROUTE_PATH (ex: TCDNM)</label><input type="text" id="path2" placeholder="대문자 연속 입력"></div>
+            <div class="input-box"><label>> TOTAL_PING (ms)</label><input type="number" id="cost2" placeholder="숫자 입력"></div>
+        </div>
+        <button id="btn-submit2" onclick="solveStage(2)">패킷 전송 (Send Packet)</button>
+        <div id="feedback2" class="feedback"></div>
+
+        <div id="math-exp2" class="math-explanation">
+            <h3>[ SYSTEM.LOG ] 동적 가중치 우회 성공</h3>
+            <p>시각적으로는 T ➔ C ➔ F ➔ M 코스가 가장 일직선이고 거리가 짧아 보입니다. 하지만 방화벽(F)의 상태를 고려한 가중치(250ms) 때문에 이 경로는 최악의 선택(305ms)이 됩니다. 다익스트라 알고리즘은 노드 F를 배제하고, <b>T ➔ C ➔ D ➔ N ➔ M (45+25+30+15 = 115ms)</b>라는, 겉보기엔 멀리 돌아가는 안전한 하단 우회로를 완벽하게 계산해냅니다.</p>
+            <button class="btn-next" onclick="nextStage(3)">> 최종 타겟 서버로 침투</button>
+        </div>
+    </div>
+
+    <!-- STAGE 3 -->
+    <div class="stage-panel" id="stage3">
+        <h2 class="stage-title">Terminal 3: 해커 코어의 암호화된 미로</h2>
+        <p>코어 입구(M)입니다. 해커의 본거지(G)로 가는 네트워크망은 마치 거미줄처럼 얽혀있습니다. 아주 미세한 Ping 단위까지 계산하여 다익스트라 테이블의 마지막 업데이트를 완료하세요!</p>
+        <div class="map-container">
+            <svg viewBox="0 0 500 300">
+                <!-- Edges -->
+                <line x1="50" y1="150" x2="160" y2="80" class="edge" /> <!-- M-H -->
+                <line x1="50" y1="150" x2="160" y2="220" class="edge" /> <!-- M-I -->
+                <line x1="160" y1="220" x2="160" y2="80" class="edge" /> <!-- I-H -->
+                <line x1="160" y1="80" x2="280" y2="80" class="edge" /> <!-- H-J -->
+                <line x1="160" y1="220" x2="280" y2="220" class="edge" /> <!-- I-K -->
+                <line x1="160" y1="220" x2="280" y2="80" class="edge" /> <!-- I-J -->
+                <line x1="280" y1="80" x2="280" y2="220" class="edge" /> <!-- J-K -->
+                <line x1="280" y1="220" x2="450" y2="150" class="edge" /> <!-- K-G -->
+                <line x1="280" y1="80" x2="450" y2="150" class="edge" /> <!-- J-G -->
+                <line x1="160" y1="80" x2="450" y2="150" class="edge" /> <!-- H-G -->
+
+                <!-- Weights -->
+                <rect x="105" y="115" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="105" y="115" class="weight-text" id="w3_MH">50</text> <!-- M-H -->
+                <rect x="105" y="185" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="105" y="185" class="weight-text" id="w3_MI">15</text> <!-- M-I -->
+                <rect x="160" y="150" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="160" y="150" class="weight-text" id="w3_IH">20</text> <!-- I-H -->
+                <rect x="220" y="80" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="220" y="80" class="weight-text" id="w3_HJ">10</text> <!-- H-J -->
+                <rect x="220" y="220" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="220" y="220" class="weight-text" id="w3_IK">65</text> <!-- I-K -->
+                <rect x="220" y="150" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="220" y="150" class="weight-text" id="w3_IJ">60</text> <!-- I-J -->
+                <rect x="280" y="150" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="280" y="150" class="weight-text" id="w3_JK">15</text>  <!-- J-K -->
+                <rect x="365" y="185" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="365" y="185" class="weight-text" id="w3_KG">25</text> <!-- K-G -->
+                <rect x="365" y="115" width="24" height="20" rx="4" class="weight-bg" transform="translate(-12, -10)" /><text x="365" y="115" class="weight-text" id="w3_JG">90</text> <!-- J-G -->
+                <rect x="305" y="115" width="30" height="20" rx="4" class="weight-bg" transform="translate(-15, -10)" /><text x="305" y="115" class="weight-text" id="w3_HG">150</text> <!-- H-G -->
+
+                <!-- Nodes -->
+                <circle cx="50" cy="150" r="18" class="node" /><text x="50" y="150" class="node-text">M</text><text x="50" y="180" class="room-label">Entry</text>
+                <circle cx="160" cy="80" r="18" class="node" /><text x="160" y="80" class="node-text">H</text><text x="160" y="50" class="room-label">Net H</text>
+                <circle cx="160" cy="220" r="18" class="node" /><text x="160" y="220" class="node-text">I</text><text x="160" y="250" class="room-label">Net I</text>
+                <circle cx="280" cy="220" r="18" class="node" /><text x="280" y="220" class="node-text">K</text><text x="280" y="250" class="room-label">Net K</text>
+                <circle cx="280" cy="80" r="18" class="node" /><text x="280" y="80" class="node-text">J</text><text x="280" y="50" class="room-label">Net J</text>
+                <circle cx="450" cy="150" r="18" class="node" /><text x="450" y="150" class="node-text">G</text><text x="450" y="120" class="room-label">Hacker Core</text>
+            </svg>
+        </div>
+        <div class="input-group">
+            <div class="input-box"><label>> ROUTE_PATH (ex: MIHJKG)</label><input type="text" id="path3" placeholder="대문자 연속 입력"></div>
+            <div class="input-box"><label>> TOTAL_PING (ms)</label><input type="number" id="cost3" placeholder="숫자 입력"></div>
+        </div>
+        <button id="btn-submit3" onclick="solveStage(3)">백신 패치 적용 (Patch Exec)</button>
+        <div id="feedback3" class="feedback"></div>
+
+        <div id="math-exp3" class="math-explanation">
+            <h3>[ SYSTEM.LOG ] 루트 권한 탈취 성공</h3>
+            <p>이 구간의 핑을 계산하는 것은 그리디(Greedy) 증명의 백미입니다. I에서 K로 바로 쏘면 65ms가 걸립니다. 하지만 다익스트라는 I에서 H로 거꾸로 올라간 뒤(20ms), J를 거쳐(10ms), 다시 K로 내려오는(15ms) 기상천외한 경로(총 45ms)를 찾아냅니다. 결과적으로 <b>M ➔ I ➔ H ➔ J ➔ K ➔ G (85ms)</b>라는, 6개의 노드를 모두 훑고 지나가는 가장 길어 보이지만 가장 빠른 기하학적 모순을 수학으로 극복했습니다!</p>
+            <button class="btn-next" onclick="showFinalSuccess()">> 백신 배포 결과 확인</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="game-over">
+        <h1 style="color: var(--error-color); font-size: 3em; margin-bottom: 10px;">[ SYSTEM COMPROMISED ]</h1>
+        <h2 style="color: #fca5a5;">기밀 데이터가 유출되었습니다.</h2>
+        <p style="color: #94a3b8; font-size: 1.1em;">라우팅 경로 계산의 치명적 오류로 인해 바이러스가 먼저 코어에 도달했습니다. 작전 실패.</p>
+        <button class="btn-start" style="margin-top:20px; width:auto; border:1px solid var(--error-color);" onclick="location.reload()">> 시스템 재부팅 및 재도전</button>
+    </div>
+
+    <!-- SUCCESS MESSAGE -->
+    <div id="final-success">
+        <h1 style="color: var(--success-color); font-size: 3em; margin-bottom: 10px;">[ PATCH APPLIED ]</h1>
+        <h2 style="color: #6ee7b7;">데이터 유출 차단 성공!</h2>
+        <p style="color: #cbd5e1; font-size: 1.2em; font-weight:bold;">
+            추적에 걸린 총 Uptime: <span id="final-time" style="color: var(--accent-glow); font-size:1.5em;">00:00</span>
+        </p>
+        <p style="color: #94a3b8; font-size: 1.1em; line-height:1.6;">
+            화이트해커인 당신의 완벽한 다익스트라 라우팅 계산 덕분에<br>
+            악성 바이러스보다 먼저 패치를 전송하여 국가 기밀을 지켜냈습니다!
+        </p>
+        <button class="btn-next" onclick="showExploration()" style="font-size: 1.1em; padding: 15px 30px;">> 네트워크 속 알고리즘 원리 열람</button>
+    </div>
+
+    <!-- EXPLORATION SECTION -->
+    <div id="exploration-section" class="exploration-panel">
+        <h2 style="color: var(--accent-glow); text-align: center; margin-top: 0;">🚀 실생활에서 진로로: IT 보안과 네트워크 라우팅</h2>
+        <p style="text-align: center; color: #94a3b8; margin-bottom: 30px;">당신이 방금 사용한 백신 전송 기술의 근간이 되는 수학적 원리와 전공 심화 지식을 소개합니다.</p>
+
+        <!-- MATHEMATICAL PRINCIPLES SECTION -->
+        <h3>📐 0. 다익스트라 알고리즘의 핵심 수학적 원리</h3>
+        <p style="color: #94a3b8;">컴퓨터 네트워크의 패킷 라우팅은 아래의 엄밀한 수학적 증명에 기반하여 오류 없이 작동합니다. 세특 작성 시 참고하세요!</p>
+        
+        <div class="theory-card">
+            <h4>① 네트워크 토폴로지의 그래프 모델링</h4>
+            <p>
+                라우팅 문제를 수학적 구조인 <b>유향 가중치 그래프(Directed Weighted Graph)</b> \(G = (V, E)\)로 추상화합니다.<br>
+                여기서 \(V\)는 노드(라우터, 서버), \(E\)는 데이터 링크(광랜, 통신망)입니다.<br>
+                각 간선 \(e \in E\)에 대하여 트래픽 지연 시간(Ping)을 나타내는 가중치 함수 \(w : E \rightarrow \mathbb{R}^+\)를 정의합니다.<br>
+                시작점 \(S\)에서 목적지 \(v\)까지의 패킷 전송 경로 \(P = (v_0, v_1, \dots, v_k)\)에 대한 총 지연 시간 \(w(P)\)는 다음과 같습니다.
+                \[ w(P) = \sum_{i=1}^{k} w(v_{i-1}, v_i) \]
+                다익스트라 프로토콜은 이 함수값 \(w(P)\)를 최소화하는 것을 수학적 목표로 삼습니다.
+            </p>
+        </div>
+
+        <div class="theory-card">
+            <h4>② 간선 완화(Edge Relaxation) 메커니즘</h4>
+            <p>
+                알고리즘 진행 중, 서버 \(v\)까지 패킷이 도달하는 데 걸리는 누적 예상 Ping을 \(d[v]\)라 합시다.<br>
+                매 라우팅 테이블 갱신 시, 연결된 인접 노드 \(u, v\)에 대해 다음의 <b>최적화 연산(완화)</b>을 수행합니다.
+                \[ d[v] = \min \big( d[v],\, d[u] + w(u, v) \big) \]
+                만약 부등식 \(d[v] > d[u] + w(u, v)\)가 성립한다면, \(u\)를 거쳐서 패킷을 보내는 것이 더 빠르다는 뜻이므로 \(d[v]\)를 갱신합니다. 이 값은 단조 감소(Monotonically decreasing)하여 실제 최단 시간 \(\delta(S, v)\)로 수렴합니다.
+            </p>
+        </div>
+
+        <div class="theory-card">
+            <h4>③ 귀납법적 증명(Induction)을 통한 안정성 보장</h4>
+            <p>
+                다익스트라 알고리즘은 매 순서마다 가장 Ping이 낮은 노드 \(u\)를 확정합니다. <b>"선택된 \(d[u]\)는 이미 절대적인 최단 거리 \(\delta(S, u)\)임이 증명된다"</b>는 사실은 수학적 귀류법으로 보장됩니다.<br>
+                만약 더 짧은 미지의 경로가 있어서 다른 노드 \(y\)를 거쳐 \(u\)로 간다고 가정할 때 (\(d[y] \le \delta(S, u) < d[u]\)), '가장 작은 값을 먼저 확정한다(Greedy)'는 원칙상 \(u\)보다 \(y\)가 먼저 처리되었어야 한다는 <b>모순(Contradiction)</b>이 발생합니다. 따라서 인터넷 통신의 최단 경로 탐색은 수학적으로 항상 완벽합니다.
+            </p>
+        </div>
+
+        <h3>🌍 1. IT/공학 분야에서의 알고리즘 유용성</h3>
+        <ul style="color: #cbd5e1;">
+            <li><b>OSPF(Open Shortest Path First) 라우팅 프로토콜:</b> 인터넷의 척추 역할을 하는 대형 라우터들은 다익스트라 알고리즘을 사용하여 수천 개의 경로 중 트래픽 지연(Cost)이 가장 적은 길을 1초에도 수만 번씩 계산해 냅니다.</li>
+            <li><b>자율주행 자동차 및 드론:</b> 목적지까지 이동할 때, 교통 체증(가중치)뿐만 아니라 배터리 소모량, 도로의 안전도 등을 변수로 삼아 다차원 배열의 다익스트라를 돌려 안전 경로를 확보합니다.</li>
+        </ul>
+
+        <h3>🎓 2. 계열별 학생 맞춤 세특 탐구 과제 가이드</h3>
+        
+        <div class="career-card" style="border-left-color:#38bdf8;">
+            <h4 style="color:#38bdf8;">💻 컴퓨터공학 / AI / 게임개발</h4>
+            <span class="tag tag-info">알고리즘</span><span class="tag tag-math">수학</span>
+            <p style="color: #cbd5e1; font-size: 0.95em;"><b>탐구 과제:</b> "다익스트라와 A* 알고리즘의 효율성 비교 및 게임 NPC 길찾기 AI 구현"<br>
+            다익스트라는 모든 방향을 탐색하지만, A* 알고리즘은 목적지 방향을 우선 탐색하는 휴리스틱 함수를 추가로 사용합니다. 두 알고리즘의 시간 복잡도를 수학적으로 비교하고, 파이썬이나 C++로 실제 게임 미로 찾기 코드를 구현해 보세요.</p>
+        </div>
+
+        <div class="career-card" style="border-left-color:#f472b6;">
+            <h4 style="color:#f472b6;">🔒 정보보안 / 사이버국방학과</h4>
+            <span class="tag tag-math">수학</span><span class="tag tag-info">보안</span>
+            <p style="color: #cbd5e1; font-size: 0.95em;"><b>탐구 과제:</b> "네트워크 방화벽(Firewall) 통과에 따른 동적 가중치 페널티 시스템 연구"<br>
+            노드의 '상태(보안 검사 여부)'에 따라 가중치가 동적으로 폭증하는 현상을 모델링하고, 악성 디도스(DDoS) 공격 시 트래픽을 분산시키기 위해 다익스트라 알고리즘이 어떻게 경로를 우회(Load Balancing)시키는지 탐구해 보세요.</p>
+        </div>
+
+        <div class="career-card" style="border-left-color:#fbbf24;">
+            <h4 style="color:#fbbf24;">⚙️ 전자전기 / 통신공학</h4>
+            <span class="tag tag-sci">공학</span><span class="tag tag-math">수학</span>
+            <p style="color: #cbd5e1; font-size: 0.95em;"><b>탐구 과제:</b> "무선 통신망(5G/6G)에서의 전파 간섭을 고려한 최적 릴레이 노드 선택 모델링"<br>
+            거리에 따른 신호 감쇠 및 건물로 인한 전파 간섭을 수식으로 나타내어 다익스트라의 '가중치'로 변환한 뒤, 기지국 간 데이터 전송 실패율을 최소화하는 통신망 설계 보고서를 작성할 수 있습니다.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+    // --- Dynamic Graph & Dijkstra Logic ---
+    let stages = {
+        1: { start: 'S', end: 'T', edges: { SA: 120, SB: 15, BA: 35, BC: 80, AC: 20, AT: 150, CT: 40 }, graph: {} },
+        2: { start: 'T', end: 'M', edges: { TC: 85, TD: 45, DC: 25, DF: 250, CF: 180, CE: 70, FE: 100, DN: 30, DM: 90, EM: 80, NM: 15 }, graph: {} },
+        3: { start: 'M', end: 'G', edges: { MH: 50, MI: 15, IH: 20, HJ: 10, IK: 65, IJ: 60, JK: 15, KG: 25, JG: 90, HG: 150 }, graph: {} }
+    };
+    
+    let answers = {
+        1: { path: '', cost: 0 },
+        2: { path: '', cost: 0 },
+        3: { path: '', cost: 0 }
+    };
+
+    function initRandomWeights() {
+        for (let stageNum = 1; stageNum <= 3; stageNum++) {
+            let stage = stages[stageNum];
+            let g = {};
+            for (let edge in stage.edges) {
+                let u = edge[0];
+                let v = edge[1];
+                let orig = stage.edges[edge];
+                // Randomly vary between -7 to +7, but ensure min is 1
+                let diff = Math.floor(Math.random() * 15) - 7;
+                let newWeight = Math.max(1, orig + diff);
+                
+                // Update DOM
+                let el = document.getElementById(`w${stageNum}_${edge}`);
+                if (el) el.textContent = newWeight;
+                
+                // Build graph
+                if (!g[u]) g[u] = {};
+                g[u][v] = newWeight;
+            }
+            stage.graph = g;
+            
+            answers[stageNum] = runDijkstra(g, stage.start, stage.end);
+            console.log(`Stage ${stageNum} Answer:`, answers[stageNum]);
+        }
+    }
+
+    function runDijkstra(graph, start, end) {
+        let dist = {};
+        let prev = {};
+        let q = new Set();
+        
+        let allNodes = new Set([start, end]);
+        for (let u in graph) {
+            allNodes.add(u);
+            for (let v in graph[u]) allNodes.add(v);
+        }
+        
+        for (let node of allNodes) {
+            dist[node] = Infinity;
+            prev[node] = null;
+            q.add(node);
+        }
+        dist[start] = 0;
+        
+        while (q.size > 0) {
+            let u = null;
+            for (let node of q) {
+                if (u === null || dist[node] < dist[u]) {
+                    u = node;
+                }
+            }
+            
+            q.delete(u);
+            if (dist[u] === Infinity || u === end) break;
+            
+            if (graph[u]) {
+                for (let v in graph[u]) {
+                    if (q.has(v)) {
+                        let alt = dist[u] + graph[u][v];
+                        if (alt < dist[v]) {
+                            dist[v] = alt;
+                            prev[v] = u;
+                        }
+                    }
+                }
+            }
+        }
+        
+        let path = [];
+        let u = end;
+        while (u) {
+            path.unshift(u);
+            u = prev[u];
+        }
+        return { path: path.join(''), cost: dist[end] };
+    }
+    
+    document.addEventListener("DOMContentLoaded", initRandomWeights);
+
+    let timerInterval;
+    let startTime;
+    let errorsCount = 0;
+    const MAX_ERRORS = 2; // 기회 2번
+
+    function startGame() {
+        document.getElementById('intro-screen').style.display = 'none';
+        document.getElementById('status-bar').style.display = 'flex';
+        document.getElementById('stage1').style.display = 'block';
+        
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+        const now = Date.now();
+        const diff = new Date(now - startTime);
+        const m = String(diff.getMinutes()).padStart(2, '0');
+        const s = String(diff.getSeconds()).padStart(2, '0');
+        document.getElementById('time-display').innerText = `${m}:${s}`;
+    }
+
+    function updateLives() {
+        const display = document.getElementById('lives-display');
+        if (errorsCount === 0) display.innerText = "[ 안정 - 데이터 유출 0% ]";
+        else if (errorsCount === 1) display.innerText = "[ 경고 - 데이터 유출 50% 진행중! ]";
+        else display.innerText = "[ 치명적 오류 - 시스템 파괴됨 ]";
+    }
+
+    // 오답 시 호출되는 함수 (부연설명 커스텀 매개변수 추가)
+    function handleMistake(feedback, customMsg) {
+        errorsCount++;
+        updateLives();
+        
+        if (errorsCount >= MAX_ERRORS) {
+            clearInterval(timerInterval);
+            document.querySelectorAll('.stage-panel').forEach(p => p.style.display = 'none');
+            document.getElementById('status-bar').style.display = 'none';
+            document.getElementById('game-over').style.display = 'block';
+        } else {
+            feedback.innerHTML = `<b>[ERROR] 계산 오류가 감지되었습니다.</b><br>${customMsg}<br><br><span style="color:#ef4444;">⚠️ 경고: 한 번 더 실패하면 해커에게 코어가 장악됩니다!</span>`;
+            feedback.className = "feedback error";
+        }
+    }
+
+    // 각 스테이지 정답 확인 로직 (오답에 대한 상세한 분석 추가)
+    function solveStage(stageNum) {
+        const ansPath = answers[stageNum].path;
+        const ansCost = String(answers[stageNum].cost);
+        const path = document.getElementById(`path${stageNum}`).value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+        const cost = document.getElementById(`cost${stageNum}`).value.trim();
+        const feedback = document.getElementById(`feedback${stageNum}`);
+
+        if (path === ansPath && cost === ansCost) {
+            feedback.className = "feedback success";
+            feedback.innerHTML = "[SUCCESS] 정확한 경로가 승인되었습니다. 패킷을 전송합니다.";
+            
+            document.getElementById(`btn-submit${stageNum}`).disabled = true;
+            document.getElementById(`math-exp${stageNum}`).style.display = "block";
+        } else {
+            let detailMsg = "입력한 경로(ROUTE) 또는 지연시간(PING) 합산이 잘못되었습니다.";
+            
+            // 스테이지 1 오답 상세 피드백
+            if (stageNum === 1) {
+                if (path === "SAT") {
+                    detailMsg = "<b>[분석 결과]</b> S에서 A로 가는 직통 경로(120ms)는 너무 느립니다. S에서 B(15ms)를 거치는 것이 유리합니다.";
+                } else if (path === "SBCT" || path === "SBAT" && cost !== "110") {
+                    detailMsg = "<b>[분석 결과]</b> B에서 C로 바로 가면 80ms가 걸립니다. 하지만 B에서 A를 거쳐 C로 가면 (35+20=55ms) 25ms를 단축할 수 있습니다. 완화(Relaxation) 포인트를 놓치셨네요!";
+                } else {
+                    detailMsg = "<b>[분석 결과]</b> S ➔ B ➔ A ➔ C ➔ T 로 이어지는 모든 노드를 밟는 우회로의 Ping 합을 다시 정확히 계산해 보세요.";
+                }
+            }
+            // 스테이지 2 오답 상세 피드백
+            if (stageNum === 2) {
+                if (path.includes("F")) {
+                    detailMsg = "<b>[치명적 실수!]</b> 경로에 방화벽(F)이 포함되어 있습니다. 방화벽 노드는 보안 검사로 인해 핑이 200ms 이상 폭증하는 함정입니다. 무조건 F를 우회해야 합니다!";
+                } else if (path === "TCDM") {
+                    detailMsg = "<b>[분석 결과]</b> D에서 M으로 바로 쏘면 90ms가 걸립니다. 하지만 아래쪽 N을 거쳐가면 (30+15=45ms) 훨씬 빠릅니다. 눈에 보이는 직통 선을 믿지 마세요.";
+                } else if (path.length < 5) {
+                    detailMsg = "<b>[분석 결과]</b> 방화벽을 피해 멀리 돌아가는 T ➔ C ➔ D ➔ N ➔ M (총 5개 노드) 경로의 누적 시간을 다시 더해 보세요.";
+                }
+            }
+            // 스테이지 3 오답 상세 피드백
+            if (stageNum === 3) {
+                if (path.includes("MIKG") || (path.includes("I") && path.includes("K") && !path.includes("H"))) {
+                    detailMsg = "<b>[분석 결과]</b> I에서 K로 바로 전송하면 65ms가 소요됩니다. 하지만 I에서 위쪽 H와 J를 차례로 거쳐 K로 내려오면 (20+10+15=45ms) 핑을 20ms나 줄일 수 있습니다!";
+                } else if (path === "MIHJG") {
+                    detailMsg = "<b>[분석 결과]</b> J에서 G로 바로 가면 90ms입니다. J에서 K로 내려간 뒤 G로 가는 편(15+25=40ms)이 압도적으로 빠릅니다. 동적 계획법의 끝을 보여주세요.";
+                } else {
+                    detailMsg = "<b>[분석 결과]</b> 6개의 노드를 <b>모두 지그재그로</b> 밟고 지나가는 가장 기괴한 동선이 정답입니다. 꼼꼼히 누적합을 갱신하세요.";
+                }
+            }
+            
+            handleMistake(feedback, detailMsg);
+        }
+    }
+
+    function nextStage(nextNum) {
+        const currentStage = document.getElementById(`stage${nextNum - 1}`);
+        const nextStageEl = document.getElementById(`stage${nextNum}`);
+        
+        currentStage.style.opacity = "0.3";
+        currentStage.style.pointerEvents = "none";
+        nextStageEl.style.display = "block";
+        nextStageEl.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showFinalSuccess() {
+        clearInterval(timerInterval);
+        document.getElementById('stage3').style.opacity = "0.3";
+        document.getElementById('status-bar').style.display = 'none';
+        
+        const finalTime = document.getElementById('time-display').innerText;
+        document.getElementById('final-time').innerText = finalTime;
+        
+        document.getElementById('final-success').style.display = "block";
+        document.getElementById('final-success').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showExploration() {
+        const exploreSection = document.getElementById('exploration-section');
+        exploreSection.style.display = 'block';
+        exploreSection.scrollIntoView({ behavior: 'smooth' });
+        
+        // MathJax 렌더링 호출
+        if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise();
+        }
+    }
+</script>
+
+</body>
+</html>
