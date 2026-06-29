@@ -511,9 +511,8 @@
                 let u = edge[0];
                 let v = edge[1];
                 let orig = stage.edges[edge];
-                // Randomly vary between -7 to +7, but ensure min is 1
-                let diff = Math.floor(Math.random() * 15) - 7;
-                let newWeight = Math.max(1, orig + diff);
+                // 가중치를 해설과 일치하도록 고정 (무작위 변동 제거)
+                let newWeight = orig;
                 
                 // Update DOM
                 let el = document.getElementById(`w${stageNum}_${edge}`);

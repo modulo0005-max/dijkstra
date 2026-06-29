@@ -292,7 +292,7 @@
                 <!-- 가중치 -->
                 <rect x="115" y="100" width="20" height="20" rx="10" class="weight-bg" transform="translate(-10, -10)" /><text x="115" y="100" class="weight-text" id="w2_TC">4</text>
                 <rect x="115" y="180" width="20" height="20" rx="10" class="weight-bg" transform="translate(-10, -10)" /><text x="115" y="180" class="weight-text" id="w2_TD">8</text>
-                <rect x="180" y="140" width="20" height="20" rx="10" class="weight-bg" transform="translate(-10, -10)" /><text x="180" y="140" class="weight-text" id="w2_DC">3</text>
+                <rect x="180" y="140" width="20" height="20" rx="10" class="weight-bg" transform="translate(-10, -10)" /><text x="180" y="140" class="weight-text" id="w2_CD">3</text>
                 <rect x="245" y="100" width="20" height="20" rx="10" class="weight-bg" transform="translate(-10, -10)" /><text x="245" y="100" class="weight-text" id="w2_CF">7</text>
                 <rect x="245" y="180" width="20" height="20" rx="10" class="weight-bg" transform="translate(-10, -10)" /><text x="245" y="180" class="weight-text" id="w2_DF">2</text>
                 <rect x="315" y="210" width="20" height="20" rx="10" class="weight-bg" transform="translate(-10, -10)" /><text x="315" y="210" class="weight-text" id="w2_DM">9</text>
@@ -496,7 +496,7 @@
     // --- Dynamic Graph & Dijkstra Logic ---
     let stages = {
         1: { start: 'S', end: 'T', edges: { SA: 6, SB: 3, BA: 2, AT: 3, BT: 8 }, graph: {} },
-        2: { start: 'T', end: 'M', edges: { TC: 4, TD: 8, DC: 3, CF: 7, DF: 2, DM: 9, FM: 3 }, graph: {} },
+        2: { start: 'T', end: 'M', edges: { TC: 4, TD: 8, CD: 3, CF: 7, DF: 2, DM: 9, FM: 3 }, graph: {} },
         3: { start: 'M', end: 'G', edges: { MH: 6, MI: 3, IH: 2, HJ: 3, IJ: 7, HG: 9, JG: 3 }, graph: {} }
     };
     
@@ -514,9 +514,8 @@
                 let u = edge[0];
                 let v = edge[1];
                 let orig = stage.edges[edge];
-                // Randomly vary between -7 to +7, but ensure min is 1
-                let diff = Math.floor(Math.random() * 15) - 7;
-                let newWeight = Math.max(1, orig + diff);
+                // 가중치를 해설과 일치하도록 고정 (무작위 변동 제거)
+                let newWeight = orig;
                 
                 // Update DOM
                 let el = document.getElementById(`w${stageNum}_${edge}`);
