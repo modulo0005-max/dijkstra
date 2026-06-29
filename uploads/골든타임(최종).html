@@ -213,7 +213,7 @@
 </head>
 <body>
 
-<a href="../시뮬레이터 허브.dc.html" style="position:fixed;top:16px;left:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(0,0,0,0.55);color:var(--accent-glow);border:1px solid var(--accent-glow);border-radius:30px;font-family:'Pretendard',sans-serif;font-size:14px;font-weight:700;text-decoration:none;backdrop-filter:blur(6px);">← 처음으로</a>
+<a href="../index.html" style="position:fixed;top:16px;left:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(0,0,0,0.55);color:var(--accent-glow);border:1px solid var(--accent-glow);border-radius:30px;font-family:'Pretendard',sans-serif;font-size:14px;font-weight:700;text-decoration:none;backdrop-filter:blur(6px);">← 처음으로</a>
 
 <div class="game-container">
     <div class="header">
@@ -639,7 +639,7 @@
             
             // 제출 버튼 비활성화 및 해설 공개
             document.getElementById(`btn-submit${stageNum}`).disabled = true;
-            document.getElementById(`math-exp${stageNum}`).style.display = "block";
+            document.getElementById(`math-exp${stageNum}`).style.display = "block";\n\n// --- 동적 정답 출력 ---\nlet expEl = document.getElementById(`math-exp${stageNum}`);\nif (!expEl.dataset.appended) {\n    let actualResult = document.createElement("div");\n    actualResult.style.marginTop = "15px";\n    actualResult.style.padding = "15px";\n    actualResult.style.backgroundColor = "rgba(0,0,0,0.5)";\n    actualResult.style.borderRadius = "8px";\n    actualResult.style.border = "1px dashed #facc15";\n    actualResult.innerHTML = "<b>[🔥 이번 시뮬레이션의 실제 정답]</b><br><br>위 해설은 기준 가중치를 바탕으로 한 예시입니다.<br>무작위 변동된 현재 맵의 실제 최단 경로는 <b style=\"color:#facc15\">" + ansPath + "</b> 이며, 실제 최단 소요 비용은 <b style=\"color:#facc15\">" + ansCost + "</b> 입니다.";\n    expEl.appendChild(actualResult);\n    expEl.dataset.appended = "true";\n}
         } else {
             // 스테이지별 피드백 메세지 커스텀
             let msg = "오류 발생! 노드가 추가되었습니다. 모든 경로를 다시 갱신해 보세요.";
@@ -684,5 +684,5 @@
     }
 </script>
 
-</body>
+<!-- Floating Navigation Menu -->\n<style>\n    .floating-nav { position: fixed; top: 60px; left: 16px; z-index: 99999; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px); }\n    .floating-nav a { color: #fff; text-decoration: none; font-family: sans-serif; font-size: 13px; padding: 6px 12px; border-radius: 4px; transition: 0.2s; background: rgba(255,255,255,0.1); }\n    .floating-nav a:hover { background: rgba(255,255,255,0.3); }\n    .floating-nav .nav-title { color: #93c5fd; font-size: 12px; font-weight: bold; margin-bottom: 5px; text-align: center; }\n</style>\n<div class="floating-nav">\n    <div class="nav-title">다른 프로젝트 이동</div>\n    <a href="다익스트라 알고리즘 튜토리얼.html">0. 기초 튜토리얼</a>\n    <a href="화이트 해커(최종).html">1. 화이트 해커</a>\n    <a href="도서관 탈출(최종).html">2. 도서관 탈출</a>\n    <a href="급식실(최종).html">3. 급식실 탈출</a>\n    <a href="골든타임(최종).html">4. 골든타임 사수</a>\n    <a href="최저탄소경로찾기.html">5. 최저탄소 경로</a>\n    <a href="심화주제탐구.html">6. 심화 주제 탐구</a>\n</div>\n\n</body>
 </html>
