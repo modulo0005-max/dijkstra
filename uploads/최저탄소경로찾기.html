@@ -597,7 +597,7 @@
 
     function solveStage(stageNum) {
         const ansPath = answers[stageNum].path;
-        const ansCost = String(answers[stageNum].cost);
+        const ansCost = parseFloat(answers[stageNum].cost);
         const path = document.getElementById(`path${stageNum}`).value.trim().toUpperCase().replace(/[^A-Z]/g, '');
         const costStr = document.getElementById(`cost${stageNum}`).value.trim();
         const cost = parseFloat(costStr); // 소수점 비교를 위해 Float 변환
