@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>다익스트라 심화 주제탐구 21선 · 자기주도 탐구 가이드</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --paper: #f5f3ec;
+            --card: #fffefb;
+            --ink: #16161a;
+            --text: #3d3b35;
+            --muted: #6b6960;
+            --faint: #a39f90;
+            --line: #e4e0d4;
+            --line-soft: #ece8dc;
+            --primary: #4f46e5;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard Variable', 'Pretendard', 'IBM Plex Sans', -apple-system, sans-serif;
+            font-weight: 450;
+            background-color: var(--paper);
+            background-image: linear-gradient(rgba(30,30,35,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(30,30,35,0.045) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        a { text-decoration: none; color: inherit; }
+
+        .backbtn {
+            position: fixed; top: 16px; left: 16px; z-index: 9999;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 16px; background: var(--card);
+            border: 1px solid var(--line); border-radius: 30px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 500;
+            color: var(--muted); box-shadow: 0 2px 8px rgba(20,20,20,0.05);
+            transition: border-color .2s, color .2s;
+        }
+        .backbtn:hover { border-color: var(--primary); color: var(--primary); }
+
+        header { max-width: 1320px; margin: 0 auto; padding: 58px 28px 24px; }
+        .kicker { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+        .kicker span:first-child {
+            font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: 3.5px;
+            color: var(--faint); text-transform: uppercase;
+        }
+        .kicker .rule { flex: 1; height: 1px; background: var(--line); }
+        header h1 {
+            font-family: 'Pretendard Variable', 'Pretendard', sans-serif; font-weight: 800; font-size: 44px;
+            line-height: 1.08; letter-spacing: -1px; margin: 0 0 16px; color: var(--ink);
+        }
+        header p { max-width: 760px; font-size: 16px; line-height: 1.75; color: var(--muted); margin: 0; }
+        header .lead-note {
+            margin-top: 18px; font-size: 14px; color: var(--text);
+            background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--primary);
+            border-radius: 10px; padding: 14px 18px; max-width: 760px;
+        }
+
+        .container {
+            display: flex; max-width: 1320px; margin: 24px auto 60px;
+            padding: 0 28px; gap: 28px; align-items: flex-start;
+        }
+        .sidebar { flex: 0 0 380px; position: sticky; top: 24px; }
+        .filter-container { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+        .filter-btn {
+            background: var(--card); color: var(--muted); border: 1px solid var(--line);
+            padding: 7px 13px; border-radius: 20px; font-family: 'IBM Plex Mono', monospace;
+            font-size: 11.5px; cursor: pointer; transition: all 0.18s; font-weight: 500;
+        }
+        .filter-btn.active, .filter-btn:hover { background: var(--ink); color: #f5f3ec; border-color: var(--ink); }
+        
+        .topic-list {
+            display: flex; flex-direction: column; gap: 8px;
+            max-height: calc(100vh - 120px); overflow-y: auto; padding: 2px 6px 20px 2px;
+        }
+        .topic-list::-webkit-scrollbar { width: 7px; }
+        .topic-list::-webkit-scrollbar-thumb { background-color: #d8d4c6; border-radius: 4px; }
+        
+        .topic-btn {
+            background: var(--card); color: var(--ink); border: 1px solid var(--line);
+            padding: 14px 16px; border-radius: 11px; text-align: left; cursor: pointer;
+            transition: all 0.18s ease; font-size: 14.5px; font-weight: 500;
+            font-family: 'IBM Plex Sans', sans-serif; line-height: 1.4;
+            display: flex; gap: 11px; align-items: flex-start;
+        }
+        .topic-btn .num {
+            font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600;
+            color: var(--faint); flex-shrink: 0; padding-top: 1px;
+        }
+        .topic-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+        .topic-btn:hover { transform: translateX(3px); box-shadow: 0 6px 16px rgba(20,20,20,0.07); }
+        .topic-btn.active { border-color: var(--ink); box-shadow: 0 6px 18px rgba(20,20,20,0.10); }
+
+        .content-area {
+            flex: 1; min-width: 0; background: var(--card); border-radius: 16px;
+            padding: 40px 44px; border: 1px solid var(--line); box-shadow: 0 4px 18px rgba(20,20,20,0.04);
+        }
+        .empty { text-align: center; color: var(--faint); padding: 90px 20px; }
+        .empty h2 { font-family: 'Pretendard Variable', 'Pretendard', sans-serif; font-weight: 700; color: var(--muted); border: none; font-size: 25px; margin: 0 0 12px; }
+        .empty .glyph { font-size: 40px; margin-bottom: 18px; opacity: .5; }
+
+        .c-cat { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-weight: 600; }
+        .content-area h2.c-title {
+            font-family: 'Pretendard Variable', 'Pretendard', sans-serif; font-weight: 700; font-size: 29px; line-height: 1.2;
+            color: var(--ink); margin: 0 0 16px; border: none; padding: 0;
+        }
+        .tags { margin-bottom: 22px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag {
+            display: inline-block; background: #f0eee5; color: var(--muted);
+            padding: 4px 10px; border-radius: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+        }
+        
+        .question-box {
+            border-radius: 12px; padding: 20px 22px; margin-bottom: 18px;
+            background: var(--ink); color: #f5f3ec;
+        }
+        .question-box .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 1.5px; opacity: .6; text-transform: uppercase; margin-bottom: 8px; }
+        .question-box .q { font-family: 'Pretendard Variable', 'Pretendard', sans-serif; font-weight: 600; font-size: 20px; line-height: 1.45; }
+        
+        .desc-box {
+            background: #faf8f1; border: 1px solid var(--line-soft); border-radius: 10px;
+            padding: 16px 18px; margin-bottom: 30px; color: var(--text); font-size: 15px;
+        }
+        .desc-box strong { color: var(--ink); }
+
+        .step-container {
+            margin-bottom: 16px; background: var(--card); border-radius: 12px;
+            border: 1px solid var(--line); overflow: hidden;
+        }
+        .step-header {
+            padding: 14px 20px; font-weight: 600; color: var(--ink); font-size: 15px;
+            border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; gap: 10px;
+            background: #faf8f1;
+        }
+        .step-header .sn {
+            font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
+            color: #fff; background: var(--primary); border-radius: 6px; padding: 3px 8px; flex-shrink: 0;
+        }
+        .step-body { padding: 18px 20px; }
+        .action-text { margin-bottom: 14px; font-size: 15px; line-height: 1.7; color: var(--text); }
+        .action-text b { color: var(--ink); }
+
+        .ai-prompt-box {
+            background: #f4f3ff; border: 1px solid #ddd9fb; border-radius: 9px;
+            padding: 16px 16px 14px; position: relative;
+        }
+        .ai-prompt-box::before {
+            content: "AI 보조 프롬프트 — 직접 탐구한 뒤 검증·심화용으로 활용";
+            display: block; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px;
+            color: #6d28d9; margin-bottom: 10px; font-weight: 600; letter-spacing: .3px; padding-right: 80px;
+        }
+        .prompt-text {
+            color: #2a2740; font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+            line-height: 1.6; white-space: pre-wrap;
+        }
+        .copy-btn {
+            position: absolute; top: 13px; right: 13px;
+            background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd;
+            padding: 5px 11px; border-radius: 6px; cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; transition: all 0.18s;
+        }
+        .copy-btn:hover { background: #7c3aed; color: white; border-color: #7c3aed; }
+
+        .record-box {
+            margin-top: 26px; background: #fbfaf6; border: 1px solid var(--line);
+            border-left: 3px solid #d97706; border-radius: 10px; padding: 18px 20px;
+        }
+        .record-box .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 1.5px; color: #b45309; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+        .record-box p { margin: 0; font-size: 14.5px; line-height: 1.7; color: var(--text); }
+
+        .extend-box {
+            margin-top: 14px; display: flex; gap: 11px; align-items: flex-start;
+            font-size: 14px; color: var(--muted); padding: 0 4px;
+        }
+        .extend-box .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--primary); font-weight: 600; flex-shrink: 0; padding-top: 1px; }
+
+        #toast {
+            visibility: hidden; min-width: 240px; margin-left: -120px;
+            background-color: var(--ink); color: #f5f3ec; text-align: center; border-radius: 30px;
+            padding: 13px; position: fixed; z-index: 1000; left: 50%; bottom: 30px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500;
+            opacity: 0; transition: opacity 0.3s, visibility 0.3s; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+        }
+        #toast.show { visibility: visible; opacity: 1; }
+
+        @media (max-width: 900px) {
+            .container { flex-direction: column; }
+            .sidebar { position: static; flex: none; width: 100%; }
+            .topic-list { max-height: 340px; }
+            .content-area { padding: 28px 22px; }
+            header h1 { font-size: 36px; }
+        }
+
+        .browser-bar {
+            background: #e2e1dc; height: 44px; display: flex; align-items: center; padding: 0 16px; gap: 16px;
+            position: sticky; top: 0; z-index: 10000; border-bottom: 1px solid #d1d0c9;
+        }
+        .browser-bar .circles { display: flex; gap: 6px; }
+        .browser-bar .circles i { width: 12px; height: 12px; border-radius: 50%; background: #fc605c; display: inline-block; }
+        .browser-bar .circles i:nth-child(2) { background: #fdbc40; }
+        .browser-bar .circles i:nth-child(3) { background: #34c849; }
+        .browser-bar .address {
+            background: #f1f0eb; border-radius: 6px; padding: 4px 16px; font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px; color: var(--muted); flex: 1; text-align: center; border: 1px solid #d1d0c9;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+        }
+        /* Update back button position to account for the new browser bar */
+        .backbtn { top: 60px !important; }
+    </style>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+
+<div class="browser-bar">
+    <div class="circles"><i></i><i></i><i></i></div>
+    <div class="address">https://research-guide.dijkstra.edu/advanced-topics</div>
+</div>
+
+<a href="../시뮬레이터 허브.dc.html" class="backbtn">← 처음으로</a>
+<header>
+    <div class="kicker">
+        <span>Advanced Research · 심화 주제탐구</span>
+        <span class="rule"></span>
+    </div>
+    <h1>다익스트라 심화 주제탐구 21선</h1>
+    <p>시뮬레이터에서 익힌 최단 경로 알고리즘을 나만의 탐구로 확장해 보세요. 21개 주제 각각에 <strong>핵심 질문 → 스스로 해보는 3단계 → 생기부 기록 포인트 → 후속 탐구</strong>가 준비되어 있습니다. 고1·2 수준에서 직접 수행할 수 있도록 설계했습니다.</p>
+    <div class="lead-note"><b>AI는 '대신 해주는 도구'가 아니라 '검증·심화 보조 도구'입니다.</b> 먼저 스스로 자료를 찾고 손으로 계산·실험한 뒤, 제공된 프롬프트로 결과를 점검하고 더 깊이 파고들면 탐구의 자기주도성과 학업역량이 분명하게 드러납니다.</div>
+</header>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="filter-container" id="filter-container">
+            <button class="filter-btn active" onclick="filterTopics('전체')">전체</button>
+            <button class="filter-btn" onclick="filterTopics('컴퓨터/AI')">컴퓨터·AI</button>
+            <button class="filter-btn" onclick="filterTopics('의학/생명')">의학·생명</button>
+            <button class="filter-btn" onclick="filterTopics('경영/물류')">경영·물류</button>
+            <button class="filter-btn" onclick="filterTopics('사회/도시')">사회·도시</button>
+            <button class="filter-btn" onclick="filterTopics('수학/교육')">수학·교육</button>
+        </div>
+        <div class="topic-list" id="button-container"></div>
+    </div>
+
+    <div class="content-area" id="content-display">
+        <div class="empty">
+            <div class="glyph">◴</div>
+            <h2>좌측에서 탐구 주제를 선택하세요</h2>
+            <p>주제마다 직접 수행할 수 있는 3단계 탐구 방법과<br>생기부 기록 포인트, 후속 탐구 제안이 준비되어 있습니다.</p>
+        </div>
+    </div>
+</div>
+
+<div id="toast">✅ 프롬프트를 복사했습니다</div>
+
+<script>
+    const catColor = {
+        "컴퓨터/AI": "#059669",
+        "의학/생명": "#dc2626",
+        "경영/물류": "#0d9488",
+        "사회/도시": "#d97706",
+        "수학/교육": "#4f46e5"
+    };
+
+    const topics = [
+        // ===== 컴퓨터 / AI (5) =====
+        {
+            title: "내비게이션은 어떻게 더 똑똑해질까? (A* 알고리즘)",
+            filter: "컴퓨터/AI", category: ["자율주행", "소프트웨어"],
+            q: "목적지 방향을 '예측'하는 정보 하나가 탐색 효율을 얼마나 바꿀까?",
+            desc: "다익스트라는 사방팔방 모든 길을 계산하지만, A* 알고리즘은 목적지 방향을 대략 예측(휴리스틱)해 훨씬 빨리 길을 찾습니다. 이 차이를 직접 측정해 봅니다.",
+            step1Label: "개념을 내 언어로 정리하기",
+            step1Text: "교과서·위키·기사를 찾아 다익스트라와 A*의 차이를 <b>한 문장씩</b>으로 정리하고, '휴리스틱(예측 거리)'을 스스로 정의해 개념 노트에 적습니다. AI 비유는 내 설명이 맞는지 점검할 때만 씁니다.",
+            prompt1: "자율주행 내비게이션에 쓰이는 '다익스트라 알고리즘'과 'A*(에이스타) 알고리즘'의 차이점을 고등학교 1학년이 이해하기 쉽게 '보물찾기'에 비유해서 3줄로 요약해 주십시오. 그리고 휴리스틱(예측 거리)이 무슨 뜻인지 예시를 들어 설명해 주십시오.",
+            step2Label: "직접 측정하기 (코딩 지식 무관)",
+            step2Text: "구글 코랩(무료)에 접속해 두 알고리즘이 <b>방문한 칸 수</b>를 세는 코드를 실행하고, 결과를 표나 스크린샷으로 직접 기록합니다. 시작점·도착점을 바꿔 가며 최소 3회 측정해 데이터를 모읍니다.",
+            prompt2: "가상의 $5 \\times 5$ 미로 맵에서 다익스트라 알고리즘과 A* 알고리즘이 각각 목적지에 도달하기 위해 '방문한 칸(노드)의 개수'를 세어서 출력해주는 파이썬 코드를 작성해 주십시오. 그래픽 없이 콘솔 텍스트로만 심플하게 결과가 나오게 해주고, 코드마다 한글 주석을 상세히 달아주십시오.",
+            step3Label: "데이터로 결론 쓰기",
+            step3Text: "측정한 방문 칸 수를 근거로 '왜 실시간 처리가 중요한 자율주행에 A*가 유리한지'를 <b>본인의 말</b>로 결론짓고, 휴리스틱이 부정확할 때의 한계까지 비판적으로 덧붙입니다.",
+            prompt3: "파이썬 실행 결과, 다익스트라보다 A* 알고리즘이 탐색한 칸의 수가 훨씬 적었습니다. 이 결과를 바탕으로 '실시간 처리가 생명인 자율주행 자동차에 A* 알고리즘 같은 휴리스틱 탐색이 필수적인 이유'를 고등학생 세특 보고서 결론 부분으로 500자 내외로 작성해 주십시오.",
+            record: "정의 암기가 아니라 '방문 칸 수'라는 정량 지표를 직접 설계·측정·비교했고, 휴리스틱의 trade-off까지 비판적으로 고찰했다는 점을 적으면 탐구 설계력과 분석력이 드러납니다.",
+            extend: "휴리스틱 함수를 맨해튼 거리 → 유클리드 거리로 바꿔 성능 차이를 추가 측정해 보기."
+        },
+        {
+            title: "티켓팅 시 서버 과부하 방지 (로드 밸런싱)",
+            filter: "컴퓨터/AI", category: ["서버네트워크", "정보보안"],
+            q: "'가장 짧은 길'로 모두가 몰리면 왜 시스템 전체가 더 느려질까?",
+            desc: "수만 명이 동시에 접속할 때, 혼잡하지 않은 우회 경로를 택하게 하는 '동적 가중치' 개념을 학습하고 간단한 모델로 확인합니다.",
+            step1Label: "문제 상황을 그림으로 정의하기",
+            step1Text: "수강신청·티켓팅 때 서버가 멈추는 과정을 직접 <b>노드-간선 그림</b>으로 그려 보고, '최단거리만 고집하면 한 경로에 부하가 몰린다'는 핵심을 한 문장으로 정리합니다.",
+            prompt1: "인터넷 네트워크에서 수강신청이나 아이돌 티켓팅 때 서버가 다운되는 이유를 '다익스트라 알고리즘(모두가 최단거리만 선택함)'의 관점에서 설명해 주십시오. 그리고 이를 해결하기 위한 '로드 밸런싱(트래픽 분산)'의 개념을 고등학생 수준으로 알려주십시오.",
+            step2Label: "가중치를 직접 바꿔 실험하기",
+            step2Text: "거리 대신 '접속자 수'를 가중치로 둔 4노드 예제를 <b>손으로 계산</b>해, 짧지만 붐비는 길과 조금 멀지만 한산한 길의 총비용을 비교한 표를 만듭니다.",
+            prompt2: "노드가 A, B, C, D가 있습니다. (출발 A -> 도착 D). \n경로 1: A -> B -> D (거리는 짧지만 접속자가 10,000명)\n경로 2: A -> C -> D (거리는 조금 멀지만 접속자가 10명)\n제가 라우터(서버) 개발자라면, 경로 1의 가중치를 무한대로 높여서 경로 2로 우회하도록 코딩하고 싶습니다. 이런 '동적 라우팅' 알고리즘의 작동 방식을 단계별로 설명해 주십시오.",
+            step3Label: "진로와 연결해 정리하기",
+            step3Text: "실험 결과를 바탕으로 '상황에 따라 가중치를 바꾸는 유연함'이 왜 안정적인 서비스의 핵심인지 컴퓨터공학·사이버보안 진로와 연결해 결론을 씁니다.",
+            prompt3: "동적 라우팅과 로드 밸런싱을 주제로 고등학교 정보 교과 세특 보고서를 쓰고자 합니다. '단순히 거리가 짧은 것이 최적이 아니라 상황에 맞춰 유연하게 대처하는 알고리즘의 중요성'을 강조하는 소결론을 3단락으로 작성해 주십시오.",
+            record: "'최적'의 정의를 거리에서 부하·안정성으로 재해석했다는 관점 전환을 적으면 문제를 다각도로 바라보는 사고력이 드러납니다.",
+            extend: "라운드로빈·최소연결 등 실제 로드 밸런싱 방식 2가지를 조사해 장단점 비교표 만들기."
+        },
+        {
+            title: "게임 NPC 길찾기 원리 (NavMesh)",
+            filter: "컴퓨터/AI", category: ["게임공학", "메타버스"],
+            q: "지도를 '칸'이 아니라 '면'으로 나누면 왜 연산이 가벼워질까?",
+            desc: "게임 속 몬스터·NPC가 지형을 자연스럽게 피해 접근하는 최단 경로 탐색(NavMesh) 원리를 탐구합니다.",
+            step1Label: "관점 전환을 직접 그려 확인하기",
+            step1Text: "같은 지형을 한 번은 <b>바둑판(Grid)</b>으로, 한 번은 <b>다각형(Polygon)</b>으로 직접 분할해 그려 보고, 노드 수가 얼마나 줄어드는지 세어 비교합니다.",
+            prompt1: "3D 게임 개발에서 몬스터가 장애물을 피해 유저에게 길을 찾을 때, 지도를 바둑판 모양(Grid)으로 나누는 것보다 '내비게이션 메시(NavMesh, 다각형 쪼개기)'를 사용하는 것이 왜 컴퓨터 연산(메모리) 측면에서 훨씬 유리한지 고등학생 눈높이에서 3가지 이유로 설명해 주십시오.",
+            step2Label: "실제 엔진 원리 분석하기",
+            step2Text: "유니티 공식 문서나 영상에서 NavMesh가 '이동 불가 구역'을 어떻게 처리하는지 찾아보고, 그 처리 방식을 가중치($\\infty$) 개념으로 다시 설명하는 메모를 작성합니다.",
+            prompt2: "Unity 엔진의 NavMeshAgent 기능 내부에는 기본적으로 A* 알고리즘이 탑재되어 있다고 알고 있습니다. 몬스터가 낭떠러지를 우회해서 캐릭터에게 가는 경로를 계산할 때, 이 알고리즘이 '이동 불가능한 구역'의 가중치를 어떻게 처리하는지 논리적으로 설명해 주십시오.",
+            step3Label: "보고서 목차 짜고 채우기",
+            step3Text: "조사·분석한 내용을 서론-본론-결론 목차로 직접 배치하고, 각 절에 들어갈 핵심 문장을 한 줄씩 먼저 써 본 뒤 살을 붙입니다.",
+            prompt3: "저는 게임 개발자를 꿈꾸는 고등학생입니다. '다익스트라/A* 알고리즘이 게임 산업 발전에 미친 영향과 내비게이션 메시의 원리'라는 제목으로 동아리 보고서를 제출할 예정입니다. 이 보고서의 서론-본론-결론 목차를 전문적으로 구성해 주십시오.",
+            record: "Grid와 NavMesh의 노드 수를 직접 세어 '연산량 차이'를 정량적으로 비교했다는 점을 적으면 추상 개념을 수치로 검증하는 역량이 드러납니다.",
+            extend: "간단한 격자 미로를 종이에 그려 A*를 손으로 한 단계씩 풀어 경로 직접 도출해 보기."
+        },
+        {
+            title: "OSPF 라우팅: 인터넷 데이터의 최단 경로",
+            filter: "컴퓨터/AI", category: ["네트워크", "컴퓨터공학"],
+            q: "회선 하나가 끊기면 인터넷은 어떻게 스스로 새 길을 찾을까?",
+            desc: "전 세계 통신망을 지탱하는 OSPF 프로토콜 속에 다익스트라 원리가 어떻게 쓰이는지 알아봅니다.",
+            step1Label: "규칙을 비유로 정리하기",
+            step1Text: "OSPF가 '각 라우터가 지도를 공유하고 최단 경로를 계산한다'는 규칙임을 자료로 확인하고, 우체국·택배 비유로 내 노트에 다시 설명해 봅니다.",
+            prompt1: "인터넷 네트워크의 OSPF(Open Shortest Path First) 라우팅 프로토콜에서 다익스트라 알고리즘이 어떻게 사용되는지 고등학생이 이해하기 쉬운 비유를 들어 설명해 주십시오.",
+            step2Label: "회선 단절을 직접 시뮬레이션하기",
+            step2Text: "5노드 네트워크를 종이에 그려 최단 경로를 손으로 찾은 뒤, 그 경로의 간선 하나를 '끊고' 다시 최단 경로를 구해 <b>전후를 비교</b>합니다. (코드로도 확인 가능)",
+            prompt2: "노드가 5개인 가상 네트워크에서 특정 회선(간선) 고장으로 끊어졌을 때, 파이썬의 networkx 라이브러리가 우회 경로를 새로 찾는 과정을 보여주는 간단한 예제 코드를 작성해 주십시오.",
+            step3Label: "회복탄력성으로 결론 내기",
+            step3Text: "전후 경로 비교를 근거로 '하나가 막혀도 전체가 살아남는' 회복탄력성의 가치를 컴퓨터공학 진로와 연결해 정리합니다.",
+            prompt3: "이 탐구를 바탕으로 '단일 장애점(SPOF) 극복과 IT 인프라의 회복탄력성(Resilience)'을 주제로 한 컴퓨터공학과 진학용 세특 보고서 결론을 400자로 작성해 주십시오.",
+            record: "간선 단절 전후의 최단 경로를 직접 손으로 재계산해 비교했다는 실증 과정을 적으면 개념의 동작을 검증하는 탐구 태도가 드러납니다.",
+            extend: "가장 많은 경로가 지나는 '핵심 간선'을 찾아, 그 간선이 끊겼을 때 피해가 가장 큰 이유를 분석하기."
+        },
+        {
+            title: "동적 경로 재탐색(D* Lite): 자율주행 돌발상황",
+            filter: "컴퓨터/AI", category: ["자율주행", "로봇공학"],
+            q: "길이 막혔을 때, 처음부터 다시 계산하지 않고 바뀐 부분만 고치는 게 왜 빠를까?",
+            desc: "변화가 생긴 부분만 빠르게 다시 계산하는 실시간 알고리즘 D* Lite의 아이디어를 배웁니다.",
+            step1Label: "두 방식의 차이를 표로 잡기",
+            step1Text: "'전체 재계산(다익스트라) vs 부분 재계산(D* Lite)'의 차이를 자료로 조사해 직접 <b>비교표</b>를 만들고, 각각 언제 유리한지 한 줄로 적습니다.",
+            prompt1: "자율주행 자동차가 주행 중 갑작스러운 공사 구간을 만났을 때 사용하는 D* Lite 알고리즘의 원리를 다익스트라와 비교하여 쉽게 설명해 주십시오.",
+            step2Label: "역방향 계산을 일상 비유로 풀기",
+            step2Text: "'도착지에서 거꾸로 거리를 미리 계산해 두면 왜 유리한지'를 등굣길·미로 등 <b>내 경험에 빗대어</b> 직접 설명하는 글을 써 봅니다.",
+            prompt2: "D* Lite 알고리즘이 목적지에서부터 거꾸로 최단 거리를 계산해 놓음으로써, 이동 중 장애물을 만났을 때 연산량을 획기적으로 줄이는 과정을 일상생활의 경험에 비유해서 설명해 주십시오.",
+            step3Label: "로봇공학 비전으로 마무리하기",
+            step3Text: "조사·정리한 내용을 바탕으로 실시간 동적 처리 능력이 로봇·자율주행에 왜 핵심인지 본인의 진로 관점에서 결론을 씁니다.",
+            prompt3: "실시간 동적 데이터 처리(Dynamic Routing) 능력이 자율주행 로봇 공학 발전에 미치는 영향을 중심으로 동아리 탐구 보고서 소결론을 400자로 작성해 주십시오.",
+            record: "전체 재계산과 부분 재계산의 연산량 차이를 스스로 비교표로 구조화했다는 점을 적으면 알고리즘을 효율 관점에서 분석하는 역량이 드러납니다.",
+            extend: "다익스트라를 손으로 풀다가 간선 하나의 가중치만 바꿨을 때, 다시 계산해야 하는 노드가 몇 개인지 직접 세어 보기."
+        },
+
+        // ===== 의학 / 생명 (5) =====
+        {
+            title: "골든타임 사수! 구급차 최적 경로 계산기",
+            filter: "의학/생명", category: ["의예과", "보건의료"],
+            q: "'거리'와 '신호 대기시간'처럼 단위가 다른 값을 어떻게 하나의 비용으로 합칠까?",
+            desc: "거리뿐 아니라 신호 대기까지 반영해 '실제 도착 시간'이 가장 짧은 길을 찾는 모델을 직접 세웁니다.",
+            step1Label: "나만의 비용 공식 세우기",
+            step1Text: "거리(km)와 대기시간(분)을 하나의 '소요 시간'으로 합치는 <b>공식을 직접 설계</b>합니다. (예: $\\text{시간} = \\frac{\\text{거리}}{\\text{속력}} + (\\text{신호수} \\times \\text{대기시간})$) 가정과 단위를 노트에 명확히 적습니다.",
+            prompt1: "다익스트라 알고리즘을 구급차에 적용하려 합니다. '도로 길이(km)'와 '교차로 대기 시간(분)'을 합쳐서 하나의 '총 비용(Cost)'으로 계산하고 싶은데, 두 단위가 다릅니다. 고등학교 수학 수준에서 이것을 하나의 수식으로 정규화할 수 있는 가중치 공식을 제안해 주십시오.",
+            step2Label: "직접 계산해 경로 비교하기",
+            step2Text: "내가 만든 공식에 두 경로의 가상 데이터를 넣어 <b>손으로 계산</b>하고, '거리가 짧은 길이 항상 빠른 길은 아니다'를 수치로 보여 줍니다.",
+            prompt2: "제안해주신 수식을 써보겠습니다. [경로 A: 거리 5km, 신호등 5개(개당 1분 대기)], [경로 B: 거리 8km, 신호등 1개(개당 1분 대기)]. 이 두 경로 중 어디가 구급차가 가기에 더 빠른 길인지 시속 60km 가정하에 계산 과정을 보여주십시오.",
+            step3Label: "의학적 의미로 연결하기",
+            step3Text: "계산 결과를 골든타임(생존율)과 연결해, 수학적 모델링이 응급의료에 기여하는 바를 의예과·보건 진로 관점에서 정리합니다.",
+            prompt3: "구급차 최단시간 도출 과정을 바탕으로 의대 진학을 희망하는 학생의 생기부에 들어갈 '수학적 최적화 모델링이 환자의 생존율(골든타임)에 미치는 영향'이라는 주제의 탐구 소감문을 400자 정도로 작성해 주십시오.",
+            record: "주어진 공식을 받아쓴 게 아니라 단위가 다른 변수를 통합하는 비용 함수를 스스로 설계·검산했다는 점을 적으면 모델링 역량이 분명히 드러납니다.",
+            extend: "우리 동네 실제 두 경로의 거리·신호 개수를 지도 앱으로 조사해 내 공식에 대입해 보기."
+        },
+        {
+            title: "감염병 차단 전략: 핵심 허브(Hub) 찾기",
+            filter: "의학/생명", category: ["예방의학", "통계학"],
+            q: "백신이 부족할 때, 어느 도시부터 막아야 확산을 가장 효율적으로 끊을까?",
+            desc: "확산 네트워크에서 가장 영향력 큰 도시(허브)를 찾아 방역 자원을 우선 배분하는 원리를 배웁니다.",
+            step1Label: "중심성 개념 직접 따져 보기",
+            step1Text: "작은 네트워크를 그려 각 노드를 지나는 최단 경로가 몇 개인지 <b>직접 세어</b> '매개 중심성'을 손으로 구해 보고, 가장 높은 노드를 찾습니다.",
+            prompt1: "그래프 이론에서 전염병 확산을 막기 위해 '매개 중심성(Betweenness Centrality)'이라는 개념을 사용합니다. 이 개념이 무엇인지, 그리고 다익스트라 최단경로와 무슨 관련이 있는지 고등학생이 이해하기 쉽게 설명해 주십시오.",
+            step2Label: "차단 효과 비교하기",
+            step2Text: "중심성이 높은 노드를 막았을 때와 무작위 노드를 막았을 때, 남은 연결이 어떻게 달라지는지 그림으로 비교해 <b>어느 쪽이 더 효율적인지</b> 직접 확인합니다.",
+            prompt2: "도시 A, B, C, D, E가 있고 대전(B)이 매개 중심성이 가장 높은 도시입니다. 전염병이 돌 때, 백신을 여러 도시에 분산하는 것보다 중심성이 높은 B에 집중하여 B 노드를 '격리(가중치 $\\infty$)' 시키는 것이 수학적으로 왜 가장 효율적인 방역인지 논리적으로 설명해 주십시오.",
+            step3Label: "예방의학 관점으로 서론 쓰기",
+            step3Text: "한정된 자원을 '근거 있게' 배분해야 한다는 문제의식을 통계·수학적 근거와 함께 보건의료 진로 관점에서 정리합니다.",
+            prompt3: "보건/의료 계열 희망 학생으로서, 방금 학습한 '그래프 중심성과 전염병 차단 네트워크 모델링'을 주제로 한 탐구 보고서 서론을 작성해 주십시오. 한정된 백신을 통계적, 수학적 근거를 가지고 분배해야 하는 중요성을 강조해 주십시오.",
+            record: "작은 그래프에서 매개 중심성을 직접 손계산하고 차단 시나리오를 비교했다는 점을 적으면 추상 통계 개념을 실제로 다뤄 본 역량이 드러납니다.",
+            extend: "실제 KTX 노선도를 단순 그래프로 바꿔 어느 환승역의 중심성이 가장 높은지 추정해 보기."
+        },
+        {
+            title: "생체 모방 네트워크: 뇌 없는 점균류의 길찾기",
+            filter: "의학/생명", category: ["생명과학", "융합과학"],
+            q: "뇌도 중앙 통제도 없는 단세포 생물이 어떻게 최적의 네트워크를 만들까?",
+            desc: "점균류가 미로와 환경 속에서 스스로 효율적 네트워크를 구축하는 생물학적 메커니즘을 탐구합니다.",
+            step1Label: "유명 실험 정리하기",
+            step1Text: "점균류의 '도쿄 지하철망' 실험을 자료로 찾아 <b>실험 설계·결과·의의</b>를 표로 직접 요약하고, 핵심 한 문장을 뽑습니다.",
+            prompt1: "2010년 이그노벨상을 받은 '점균류(Slime Mold)의 도쿄 지하철망 형성 실험'의 내용과 결과를 고등학생 수준으로 요약해 주십시오. 뇌가 없는 단세포 생물이 어떻게 가장 효율적인 네트워크를 찾았는지 생물학적 원리를 설명해 주십시오.",
+            step2Label: "두 방식 비교표 만들기",
+            step2Text: "'중앙 집중형 다익스트라'와 '분산형 생체 알고리즘'의 차이를 직접 비교표로 정리합니다(정보 공유 방식, 장애 대응, 속도 등 항목을 스스로 정합니다).",
+            prompt2: "중앙 연산 장치가 전체 지도를 파악하는 다익스트라 알고리즘과, 개별 관들이 화학물질로 상호작용하는 점균류의 분산형 네트워크 형성 방식의 장단점을 비교하는 표를 만들어 주십시오.",
+            step3Label: "미래 기술로 확장해 결론 쓰기",
+            step3Text: "자연에서 얻은 통찰을 통신망·물류 등 공학에 어떻게 응용할지 본인 아이디어를 더해 생명과학 진로 관점에서 결론을 씁니다.",
+            prompt3: "비교 내용을 바탕으로 생명과학과 진학을 희망하는 학생의 탐구 보고서 결론을 작성해 주십시오. '자연 생태계의 생체 모방(Meta-Heuristics) 알고리즘이 미래 컴퓨터 네트워크 기술에 제시하는 방향성'을 포함해 주십시오.",
+            record: "비교 항목을 스스로 정해 표를 설계했다는 점을 적으면 정보를 능동적으로 구조화하는 융합적 사고가 드러납니다.",
+            extend: "집의 곰팡이·물길 등 주변에서 '분산형 최적화'로 볼 수 있는 자연 현상을 하나 더 찾아 분석하기."
+        },
+        {
+            title: "병원 내 2차 감염 최소화 동선 설계",
+            filter: "의학/생명", category: ["간호학", "보건행정"],
+            q: "확진자와 일반 환자의 동선이 겹치지 않게 하려면 경로를 어떻게 설계해야 할까?",
+            desc: "감염 위험도를 가중치로 둬, 환자 동선이 안전하게 분리되도록 병원 경로를 설계합니다.",
+            step1Label: "병원을 그래프로 바꾸기",
+            step1Text: "병원 평면도를 간단히 그려 방·복도를 <b>노드·간선</b>으로 바꾸고, 위험 구역의 간선에 높은 가중치를 부여하는 규칙을 직접 정합니다.",
+            prompt1: "다익스트라 알고리즘을 활용하여 병원 내에서 감염병 확진자와 일반 환자의 동선이 겹치지 않도록 안전하게 라우팅하는 수학적 모델링 아이디어를 제안해 주십시오.",
+            step2Label: "동적 차단 시나리오 만들기",
+            step2Text: "확진자가 지나는 복도의 가중치를 $\\infty$로 바꾼 뒤 일반 환자의 우회 경로를 <b>직접 다시 구해</b>, 동선이 분리됨을 그림으로 보여 줍니다.",
+            prompt2: "확진자가 지나가는 복도(간선)의 가중치를 일시적으로 무한대(접근 불가)로 자동 설정했을 때, 다익스트라 알고리즘이 일반 환자의 우회 경로를 어떻게 갱신하는지 간단한 수학적 시나리오를 만들어 주십시오.",
+            step3Label: "보건행정 서론 작성하기",
+            step3Text: "설계한 모델을 근거로 스마트 원내 감염 예방 시스템의 필요성을 간호·보건행정 진로 관점에서 정리합니다.",
+            prompt3: "보건행정 및 간호학과 진로에 맞춰, 알고리즘을 활용한 스마트 원내 감염 예방 시스템의 중요성을 강조하는 세특 보고서 서론을 400자로 작성해 주십시오.",
+            record: "실제 공간을 그래프로 추상화하고 위험도를 가중치로 환산하는 규칙을 직접 만들었다는 점을 적으면 모델링·문제정의 역량이 드러납니다.",
+            extend: "우리 학교 평면도로 '비 오는 날 가장 안 붐비는 등교 동선'을 같은 방식으로 설계해 보기."
+        },
+        {
+            title: "뇌 신경망(Connectome)과 정보의 최단 경로",
+            filter: "의학/생명", category: ["뇌과학", "생명과학"],
+            q: "신경 다발이 손상되면 뇌는 어떻게 정보를 '우회'시킬까?",
+            desc: "뇌 신경망을 그래프로 모델링해, 질환 시 경로 변화를 수학적으로 분석합니다.",
+            step1Label: "뇌를 그래프 언어로 번역하기",
+            step1Text: "뉴런=노드, 시냅스=간선으로 대응시키는 '커넥톰' 개념을 자료로 정리하고, 뇌의 정보 전달을 최단 경로로 설명하는 한 문단을 직접 씁니다.",
+            prompt1: "인간의 뇌 신경망(Connectome)을 노드와 간선으로 이루어진 그래프로 모델링할 때, 다익스트라 알고리즘의 최단 경로 개념이 정보 전달 과정에 어떻게 적용될 수 있는지 뇌과학 관점에서 설명해 주십시오.",
+            step2Label: "손상-우회 과정 그려 보기",
+            step2Text: "작은 신경망 그래프를 그려 간선 하나를 '손상'시키고, 정보가 우회하는 새 경로를 <b>직접 찾아</b> 신경가소성과 연결해 설명합니다.",
+            prompt2: "알츠하이머 질환으로 인해 특정 신경망(간선)이 손상되어 끊어졌을 때, 뇌가 정보를 우회하여 전달하려고 시도하는 과정(신경가소성)을 그래프 이론의 라우팅과 연관 지어 설명해 주십시오.",
+            step3Label: "미래 의학 전망으로 마무리하기",
+            step3Text: "분석을 바탕으로 그래프 기반 뇌 분석이 질병 진단에 줄 가능성을 의학 진로 관점에서 결론짓습니다.",
+            prompt3: "의학 계열 진학을 목표로 하는 학생을 위해, 수학적 그래프 이론을 통한 뇌 질환 네트워크 분석의 미래 의학적 전망을 담은 보고서 결론을 500자로 작성해 주십시오.",
+            record: "신경 손상-우회를 직접 그래프로 시뮬레이션하고 신경가소성과 연결했다는 점을 적으면 학문 간 개념을 연결하는 융합 사고가 드러납니다.",
+            extend: "'정보가 지나는 길이 많은 핵심 뉴런(허브)'이 손상되면 왜 피해가 큰지 중심성 개념으로 분석하기."
+        },
+
+        // ===== 경영 / 물류 (5) =====
+        {
+            title: "친환경 물류: 탄소 배출을 줄이는 착한 최단 경로",
+            filter: "경영/물류", category: ["ESG경영", "산업공학"],
+            q: "가중치를 '비용'에서 '탄소'로 바꾸면 최적 경로는 어떻게 달라질까?",
+            desc: "운송의 가중치를 탄소 배출량으로 설정해 친환경 물류망을 직접 구상합니다.",
+            step1Label: "탄소 데이터 직접 조사하기",
+            step1Text: "트럭·기차·화물선의 단위 화물·거리당 탄소 배출량을 자료로 찾아 <b>출처와 함께 표로</b> 정리합니다.",
+            prompt1: "물류 운송 시 사용하는 [대형 디젤 트럭, 화물 기차, 화물선]이 1톤 화물을 1km 이동시킬 때 발생하는 평균 탄소 배출량(CO2) 데이터를 표로 정리해 주십시오. (대략적인 통계 기준)",
+            step2Label: "두 경로를 직접 계산해 비교하기",
+            step2Text: "조사한 수치를 두 경로에 대입해 <b>손으로 탄소 총량을 계산</b>하고, '거리는 멀어도 탄소는 적은 경로'가 새로운 최적해가 됨을 보여 줍니다.",
+            prompt2: "A도시에서 B도시로 갈 때 [경로1: 트럭으로 100km 직통], [경로2: 기차로 150km 우회]가 있습니다. 방금 알려주신 탄소 배출량 수치를 적용하여, 거리는 경로2가 멀지만 환경적 가중치로는 경로2가 최단경로(최소 비용)가 됨을 증명하는 계산식을 작성해 주십시오.",
+            step3Label: "ESG 전략으로 정리하기",
+            step3Text: "계산 결과를 기업의 ESG 경영과 연결해, 가중치 재정의가 곧 전략이 됨을 경영·산업공학 진로 관점에서 서술합니다.",
+            prompt3: "경영학과 진학을 희망하는 학생을 위해 '다익스트라 알고리즘 가중치를 비용에서 환경(탄소)으로 변경했을 때의 친환경 물류망 설계'라는 주제의 소논문 서론을 작성해 주십시오. 기업의 ESG 경영 실천과 연결해 주십시오.",
+            record: "출처가 있는 실제 탄소 데이터를 직접 조사·대입해 결론을 수치로 입증했다는 점을 적으면 데이터 기반 의사결정 역량이 드러납니다.",
+            extend: "탄소와 비용을 동시에 고려하는 '가중합($\\alpha \\cdot \\text{비용} + \\beta \\cdot \\text{탄소}$)' 공식을 만들어 $\\alpha, \\beta$를 바꿔 보기."
+        },
+        {
+            title: "대형마트 매대 배치에 숨겨진 동선의 과학",
+            filter: "경영/물류", category: ["경영학", "심리학"],
+            q: "기업은 왜 일부러 고객의 '최단 경로'를 방해하도록 매장을 설계할까?",
+            desc: "최단경로로 사고 빠져나가려는 소비자를, 기업이 어떻게 의도적 동선으로 붙잡는지 분석합니다.",
+            step1Label: "현장 사례 관찰·기록하기",
+            step1Text: "실제 마트·다이소 등을 떠올리거나 방문해, 필수품 위치와 동선을 <b>직접 평면도로 스케치</b>하고 '왜 거기 뒀을까'를 메모합니다.",
+            prompt1: "대형 마트(예: 이케아, 코스트코)나 백화점이 우유, 계란 같은 필수품을 매장 맨 안쪽에 배치하는 이유를 고객의 다익스트라 최단경로 추구 본능과 충동구매 심리를 엮어서 고등학생에게 설명해 주십시오.",
+            step2Label: "강제 우회를 모델로 표현하기",
+            step2Text: "입구→필수품의 최단 경로 위에 '이벤트 매대' 노드를 끼워 넣어, 동선이 길어지는 과정을 <b>그래프로 직접 표현</b>합니다.",
+            prompt2: "고객이 입구(A)에서 우유(도착지 D)를 향해 최단거리로 가고 싶어 합니다. 마트 측에서 중간에 신상품 코너(B), 세일 코너(C)라는 노드를 억지로 거치도록 동선(가벽 등)을 짜서 최단경로를 길게 늘려버리는 상황을 텍스트로 묘사해 주십시오.",
+            step3Label: "공간 마케팅으로 결론 쓰기",
+            step3Text: "관찰·모델을 근거로 '공간 데이터로 소비자 동선을 통제하는 마케팅'에 대한 통찰을 경영·심리 진로 관점에서 정리합니다.",
+            prompt3: "마케팅 전문가를 꿈꾸는 학생의 세특용으로 400자 소감문을 작성해 주십시오. '기업이 공간 데이터를 활용해 소비자의 최단 경로를 통제하고 이윤을 극대화하는 동선 설계의 과학'에 대한 깨달음이 드러나게 작성해 주십시오.",
+            record: "실제 매장을 직접 관찰·스케치하고 이를 그래프 모델로 추상화했다는 1차 자료 기반 탐구를 적으면 관찰력과 모델링 역량이 함께 드러납니다.",
+            extend: "우리 학교 매점이나 편의점 동선을 같은 방법으로 분석해 '잘 팔리는 위치'를 추정해 보기."
+        },
+        {
+            title: "글로벌 공급망(Supply Chain)의 회복탄력성",
+            filter: "경영/물류", category: ["무역학과", "물류학"],
+            q: "가장 싼 길 하나가 막히면 세계 경제는 얼마나 흔들릴까?",
+            desc: "운하 폐쇄 등으로 해운망이 마비됐을 때 대체 경로를 계산해 피해를 최소화하는 원리를 탐구합니다.",
+            step1Label: "사건의 파급을 정리하기",
+            step1Text: "수에즈 운하 폐쇄 등 실제 사례를 자료로 찾아 '핵심 간선이 막히면 비용이 어떻게 연쇄 상승하는지'를 본인 말로 정리합니다.",
+            prompt1: "글로벌 공급망을 그래프로 나타낼 때, 수에즈 운하 폐쇄와 같은 물류 사고가 발생하면 전체 네트워크에 어떤 수학적 변화와 연쇄적인 운송 비용 증가가 생기는지 설명해 주십시오.",
+            step2Label: "우회 비용 직접 계산하기",
+            step2Text: "가장 싼 간선(운하)을 끊고 우회로(희망봉)로 다시 최단 경로를 구해, 늘어난 거리·시간·비용을 <b>손으로 계산</b>해 표로 만듭니다.",
+            prompt2: "수에즈 운하(가장 가중치가 낮은 간선)가 막혀서 아프리카 희망봉으로 우회해야 할 때, 늘어난 운송 시간과 비용을 계산하는 간단한 다익스트라 응용 상황 시나리오를 제시해 주십시오.",
+            step3Label: "위기관리로 결론 내기",
+            step3Text: "계산을 근거로 데이터 기반 우회 전략이 기업 리스크 관리에 필수임을 무역·경제 진로 관점에서 결론짓습니다.",
+            prompt3: "경제/무역학과 진로를 위해, 데이터 기반 물류 우회 알고리즘이 글로벌 기업의 위기관리(Risk Management) 시스템에 미치는 영향을 주제로 세특 결론을 500자로 작성해 주십시오.",
+            record: "실제 물류 사건을 그래프 간선 단절로 추상화하고 우회 비용을 정량 계산했다는 점을 적으면 시사 이슈를 수학으로 분석하는 역량이 드러납니다.",
+            extend: "최근 1년 내 물류 차질 뉴스 하나를 골라 '어느 간선이 끊겼는지' 그래프로 표현해 보기."
+        },
+        {
+            title: "환율 차익거래(Arbitrage)와 벨만-포드",
+            filter: "경영/물류", category: ["금융공학", "경제학과"],
+            q: "다익스트라가 '음수 가중치'에서 무너지는 약점이, 어떻게 금융에서 기회가 될까?",
+            desc: "다익스트라의 한계(음수 가중치)를 이용해 외환 시장에서 무위험 수익을 찾는 원리를 배웁니다.",
+            step1Label: "약점을 직접 확인하기",
+            step1Text: "음수($-$) 간선이 있는 작은 그래프를 그려 다익스트라를 손으로 돌려 보고, <b>왜 잘못된 답이 나오는지</b>를 직접 짚어 노트에 적습니다.",
+            prompt1: "그래프 이론에서 간선의 가중치가 음수($-$)일 때 다익스트라 알고리즘이 왜 무한 루프나 오류에 빠지는지 고등학생 수준에서 증명과 함께 설명해 주십시오.",
+            step2Label: "로그 변환 아이디어 따라가기",
+            step2Text: "환율의 '곱셈'을 로그로 '덧셈'으로 바꾸면 차익이 음수 사이클로 보인다는 흐름을, 간단한 3통화 예시로 <b>직접 계산</b>하며 따라갑니다.",
+            prompt2: "여러 국가의 환율 교환 비율을 로그(log) 함수로 변환하여 방향 그래프의 가중치로 삼고, 이를 통해 음수 사이클을 찾아내어 무위험 차익거래(Arbitrage) 기회를 포착하는 원리를 설명해 주십시오.",
+            step3Label: "퀀트 탐구 목차 짜기",
+            step3Text: "정리한 원리를 바탕으로 '수학으로 시장의 비효율을 잡는 퀀트' 주제의 보고서 목차를 직접 구성하고 각 절 핵심을 메모합니다.",
+            prompt3: "수학적 알고리즘과 금융 시장의 비효율성을 결합한 퀀트(Quant) 투자를 주제로 경영학과/경제학과 진학용 탐구 보고서의 서론-본론-결론 목차를 전문적으로 짜 주십시오.",
+            record: "알고리즘의 '한계'를 직접 재현해 확인하고 그 한계가 응용되는 지점까지 추적했다는 점을 적으면 비판적·심화적 사고가 드러납니다.",
+            extend: "로그의 성질(곱→합)이 왜 이 변환을 가능하게 하는지 수학Ⅰ 개념으로 한 단락 설명해 보기."
+        },
+        {
+            title: "허브 앤 스포크(Hub & Spoke) 물류망 최적화",
+            filter: "경영/물류", category: ["항공운항", "산업공학"],
+            q: "개인에겐 직항이 빠른데, 왜 기업은 굳이 허브를 거치게 할까?",
+            desc: "항공사·택배사가 중앙 허브를 거치는 이유를 간선 수 계산으로 직접 증명합니다.",
+            step1Label: "간선 개수 직접 세기",
+            step1Text: "도시 $5$개를 놓고 '모두 직접 연결'과 '허브 경유' 두 방식의 <b>간선 수를 직접 세어</b> 비교하고, $n$개 도시로 일반화한 공식을 유도해 봅니다.",
+            prompt1: "항공사나 물류 네트워크에서 $5$개의 도시가 있을 때, 출발-도착지를 모두 직접 연결하는(Point-to-Point) 방식과 1개의 중앙 허브를 거치는(Hub & Spoke) 방식에 필요한 총 간선의 개수 차이를 공식을 통해 비교해 주십시오.",
+            step2Label: "개인 최적 vs 전체 최적 구분하기",
+            step2Text: "'개인에겐 직항이 최단이지만 시스템 전체로는 허브가 유리하다'를 유지비·간선 수 관점에서 <b>논리적으로 정리</b>합니다.",
+            prompt2: "다익스트라 알고리즘 관점에서는 직통 연결이 거리가 가장 짧지만, 전체 물류 시스템의 인프라 유지 비용 측면에서는 허브 앤 스포크 방식이 수학적으로 압도적으로 유리한 이유를 논리적으로 증명해 주십시오.",
+            step3Label: "시스템 관점 결론 쓰기",
+            step3Text: "유도한 공식을 근거로 대규모 네트워크 설계의 원리를 산업공학·항공물류 진로 관점에서 결론짓습니다.",
+            prompt3: "산업공학과 또는 항공교통물류학과 진로에 맞춰, 수리적 최적화 모델이 대규모 운송 시스템의 비용 절감에 기여하는 바를 담은 보고서 결론을 400자로 작성해 주십시오.",
+            record: "$n$개 도시의 간선 수를 직접 세어 공식($\\frac{n(n-1)}{2}$ vs $n$)으로 일반화했다는 점을 적으면 구체에서 일반화로 나아가는 수학적 추론력이 드러납니다.",
+            extend: "도시 수가 $10$개, $100$개일 때 두 방식의 간선 수가 각각 어떻게 기하급수적으로 벌어지는지 엑셀이나 표로 계산해 보기."
+        },
+
+        // ===== 사회 / 도시 (3) =====
+        {
+            title: "환승 저항(Transfer Penalty)과 최적 노선망 설계",
+            filter: "사회/도시", category: ["도시공학", "교통공학"],
+            q: "거리가 짧아도 세 번 환승해야 하는 길을 사람들은 왜 기피할까?",
+            desc: "대중교통 네트워크에서 단순 거리가 아닌 '환승 피로도'를 가중치로 반영하여, 시민의 실체감 거리를 계산합니다.",
+            step1Label: "환승 페널티 가중치 설정하기",
+            step1Text: "환승할 때마다 걷고 기다리는 시간을 <b>임의의 페널티 비용(예: +10분)으로 수치화</b>하여, 단순 거리와 결합하는 식을 세웁니다.",
+            prompt1: "대중교통 최적 경로를 찾을 때, 단순 이동 시간 외에 '환승 저항(계단 오르기, 기다림 등)'을 다익스트라 알고리즘의 가중치로 반영하는 수학적 모델링 방법을 고등학생에게 설명해 주십시오.",
+            step2Label: "두 경로의 비용 역전 확인하기",
+            step2Text: "[경로A: 직행 30분] vs [경로B: 2번 환승, 순수 이동 20분]을 설정하고, 내가 정한 페널티를 대입하여 <b>선호도가 뒤집히는 임계점</b>을 찾습니다.",
+            prompt2: "다익스트라 알고리즘에 환승 1회당 +15분의 페널티 가중치를 부여한다고 가정합시다. 이를 적용했을 때, 거리는 더 멀지만 환승이 없는 버스 노선이 지하철 2번 환승 노선보다 '최단 경로'로 판정되는 예시 상황을 하나 만들어 주십시오.",
+            step3Label: "시민 중심 교통 정책으로 서론 쓰기",
+            step3Text: "데이터와 수학적 모델이 시민의 실제 행동(Behavior)을 어떻게 반영해야 하는지 도시공학적 관점에서 서론을 작성합니다.",
+            prompt3: "도시공학자를 꿈꾸는 학생입니다. '환승 저항 변수를 적용한 사용자 중심의 대중교통 라우팅 모델'이라는 주제로 쓸 보고서의 서론을 500자 내외로 전문적으로 작성해 주십시오.",
+            record: "심리적 요인(환승 피로도)을 정량적 수치(가중치)로 변환해 알고리즘에 적용하려는 모델링 시도를 적으면 문제 해결력이 돋보입니다.",
+            extend: "네이버 지도 등에서 실제 출발-도착지를 찍어보고, 앱이 '최소 시간'과 '최소 환승'을 어떻게 다르게 계산했는지 간선 가중치 관점에서 추론하기."
+        },
+        {
+            title: "소방서·응급실 접근성: 도시 내 사각지대 찾기",
+            filter: "사회/도시", category: ["행정학", "지리학"],
+            q: "다익스트라로 '가장 먼 곳'을 찾아내어 불평등을 해결할 수 있을까?",
+            desc: "출발지를 소방서로 두고 도시 전체로 뻗어가는 최단 경로를 구해, 골든타임 5분을 초과하는 '사각지대'를 찾아냅니다.",
+            step1Label: "역발상으로 접근하기 (1:N 탐색)",
+            step1Text: "출발지 하나에서 모든 노드까지의 거리를 구하는 다익스트라의 본래 특성을 이용해, <b>도달 시간이 가장 오래 걸리는 노드</b>를 찾는 아이디어를 메모합니다.",
+            prompt1: "다익스트라 알고리즘은 보통 '특정 목적지'까지의 경로를 찾을 때 쓰지만, 사실 출발지 1곳에서 '지도 상의 모든 곳'까지의 최단 거리를 한 번에 다 계산합니다. 이 특성을 이용해 도시 내 소방서의 '골든타임 5분 초과 사각지대'를 찾는 원리를 설명해 주십시오.",
+            step2Label: "간단한 지도로 사각지대 칠하기",
+            step2Text: "가상의 10개 노드 지도를 그리고 소방서 위치를 하나 정한 뒤, 손계산으로 <b>가중치 합이 5를 넘는 노드에 색칠</b>해 사각지대를 시각화합니다.",
+            prompt2: "소방서를 출발 노드로 설정한 그래프 탐색 결과, 특정 구역들(노드 집합)의 누적 가중치가 임계치(골든타임)를 초과했다고 합시다. 이를 보로노이 다이어그램(Voronoi Diagram)과 융합하여 새로운 소방서 입지를 선정하는 지리학적 분석 아이디어를 제시해 주십시오.",
+            step3Label: "공간 데이터 활용 방안으로 결론 맺기",
+            step3Text: "공간 데이터 분석이 어떻게 사회적 불평등(안전 인프라 격차)을 해소할 수 있는지 행정/공공정책 진로 관점에서 적습니다.",
+            prompt3: "공공행정 전문가를 희망하는 고등학생입니다. 공간 알고리즘과 빅데이터 분석을 통해 도시 내 안전 불평등(응급 인프라 사각지대)을 해소해야 한다는 내용으로 탐구 보고서 결론을 400자로 작성해 주십시오.",
+            record: "알고리즘을 A->B 길찾기가 아니라 '인프라 영향권 분석 도구'로 시각을 전환해 사용했다는 점을 적으면 공간적 사고력이 드러납니다.",
+            extend: "우리 동네 지도 위에 주요 소방서/경찰서를 점 찍고, 대략적인 5분 도달 범위를 원으로 그려 사각지대 추정해 보기."
+        },
+        {
+            title: "재난 대피 시 병목현상과 동적 경로(Dynamic Routing)",
+            filter: "사회/도시", category: ["건축공학", "사회학"],
+            q: "가장 가까운 대피소로 모두가 뛰어가면 어떻게 될까?",
+            desc: "한 곳으로 대피 인원이 몰리는 병목현상을 방지하기 위해, 실시간으로 가중치(혼잡도)를 업데이트하는 대피 시나리오를 구상합니다.",
+            step1Label: "수용 인원(Capacity) 개념 추가하기",
+            step1Text: "노드에 도달하는 비용뿐 아니라 <b>'통과 가능한 최대 인원'</b>이라는 제약 조건을 추가해, 최단 경로의 한계를 정의하는 한 줄을 씁니다.",
+            prompt1: "화재나 지진 같은 재난 발생 시 다수의 군중이 대피할 때, 다익스트라 알고리즘으로 '가장 가까운 출구'만 안내하면 발생하는 압사나 병목현상의 치명적 위험성을 공학적 관점에서 설명해 주십시오.",
+            step2Label: "혼잡도에 따른 실시간 우회 실험",
+            step2Text: "대피로 A에 $100$명이 몰렸을 때, A의 가중치를 $\\infty$로 높여 남은 $50$명이 <b>자동으로 대피로 B(우회로)로 향하도록 재계산</b>하는 과정을 손으로 풉니다.",
+            prompt2: "이러한 병목현상을 해결하기 위해, 특정 대피로(간선)에 일정 인원 이상이 진입하면 실시간으로 해당 간선의 가중치(저항)를 높여 후속 인원들이 자동으로 다른 출구로 분산되게 하는 '동적 라우팅(Dynamic Routing)' 모델 시나리오를 작성해 주십시오.",
+            step3Label: "스마트 빌딩 설계로 확장하기",
+            step3Text: "알고리즘 기반의 동적 대피 유도 시스템이 향후 건축 설계에 미칠 영향을 건축공학/도시방재 관점에서 결론으로 씁니다.",
+            prompt3: "건축공학 진로를 위해 탐구 보고서를 씁니다. 센서 기술과 동적 라우팅 알고리즘이 결합된 '스마트 재난 대피 유도 시스템'이 미래 건축물 설계의 필수 요소가 되어야 한다는 주장을 400자 정도로 작성해 주십시오.",
+            record: "정적인 그래프를 넘어 군중의 이동에 따라 가중치가 변하는 동적(Dynamic) 시뮬레이션을 손으로 구상했다는 점은 뛰어난 시스템적 사고를 보여줍니다.",
+            extend: "학교 건물 평면도를 바탕으로, 급식실로 향할 때 병목현상이 일어나는 계단과 우회 계단 동선을 그려 분석하기."
+        },
+
+        // ===== 수학 / 교육 (3) =====
+        {
+            title: "비유클리드 기하학: 택시 기하학에서의 최단 거리",
+            filter: "수학/교육", category: ["수학과", "수학교육"],
+            q: "대각선으로 가로지를 수 없는 바둑판 도시에서 원(Circle)은 어떤 모양일까?",
+            desc: "우리가 배운 직선(유클리드) 거리가 아닌, 격자 도로망(맨해튼 거리)에서의 다익스트라 탐색이 만드는 기하학적 형태를 탐구합니다.",
+            step1Label: "두 기하학의 거리 공식 비교하기",
+            step1Text: "유클리드 거리 공식($\\sqrt{\\Delta x^2 + \\Delta y^2}$)과 맨해튼 거리 공식($|\\Delta x| + |\\Delta y|$)을 노트에 적고, <b>$(0,0)$에서 $(3,4)$까지의 거리</b>를 각각 계산해 비교합니다.",
+            prompt1: "고등학교 수학의 '두 점 사이의 거리(유클리드 기하학)'와 격자형 도로망에서 사용하는 '맨해튼 거리(택시 기하학)'의 공식 차이를 설명하고, 왜 바둑판 모양의 신도시에서는 택시 기하학이 더 현실적인지 설명해 주십시오.",
+            step2Label: "탐색 범위(원) 직접 그려보기",
+            step2Text: "모눈종이에 중심점을 찍고, 거리가 3인 점들을 유클리드 기준(원)과 택시 기하학 기준(마름모)으로 <b>각각 직접 그려</b> 다익스트라의 탐색 파동이 어떻게 퍼지는지 확인합니다.",
+            prompt2: "유클리드 기하학에서 원(원의 중심에서 거리가 같은 점들의 집합)은 둥근 모양이지만, 택시 기하학(맨해튼 거리)에서 원을 그리면 마름모(정사각형을 기울인 모양)가 되는 이유를 고등학생이 이해하기 쉽게 증명하듯 설명해 주십시오.",
+            step3Label: "수학적 확장성으로 결론 내기",
+            step3Text: "공리의 변화가 현실 문제를 해결하는 새로운 틀(알고리즘)이 됨을 수학적 관점에서 정리합니다.",
+            prompt3: "수학과 진학을 희망하는 학생입니다. '유클리드 공리를 벗어난 택시 기하학적 관점이 컴퓨터 알고리즘과 현실의 길찾기 문제에 어떻게 응용되는가'를 주제로 세특용 소결론을 400자로 작성해 주십시오.",
+            record: "수업 시간에 배운 '두 점 사이의 거리' 공식을 비유클리드 기하학으로 확장해, 알고리즘의 탐색 형태를 모눈종이에 직접 시각화한 점이 매우 훌륭한 수학적 탐구력으로 기록됩니다.",
+            extend: "A* 알고리즘에서 휴리스틱 함수로 유클리드 거리 대신 맨해튼 거리를 썼을 때의 장점을 기하학적 형태와 연관 지어 생각해 보기."
+        },
+        {
+            title: "수학적 귀납법으로 증명하는 알고리즘의 정당성",
+            filter: "수학/교육", category: ["수학과", "논리학"],
+            q: "다익스트라가 찾은 길이 '진짜 완벽한 최단 경로'라는 것을 수학적으로 어떻게 확신할까?",
+            desc: "단순히 '잘 작동한다'를 넘어, 이 알고리즘이 결점이 없음을 고등학교 수학 I의 수학적 귀납법으로 증명해 봅니다.",
+            step1Label: "명제와 가정(P) 설정하기",
+            step1Text: "다익스트라 증명의 핵심 명제인 <b>'선택된 노드 집합 S에 속한 모든 노드는 출발점으로부터의 최단 거리가 확정되었다'</b>를 직접 노트에 씁니다.",
+            prompt1: "다익스트라 알고리즘이 항상 정확한 최단 경로를 찾아낸다는 사실(정당성)을 고등학교 과정의 '수학적 귀납법' 논리를 빌려 증명하고 싶습니다. 초기 조건($n=1$일 때)과 귀납 가정($n=k$일 때)을 어떻게 설정해야 하는지 틀을 잡아주십시오.",
+            step2Label: "$k+1$ 번째 논리 직접 전개하기",
+            step2Text: "$k$개의 노드가 확정되었을 때, 새로 추가되는 $k+1$번째 노드의 거리가 <b>왜 음수 간선이 없는 한 변할 수 없는지</b> 그 논리적 이유를 스스로 1~2문장으로 씁니다.",
+            prompt2: "수학적 귀납법 증명 과정에서 핵심인 부분입니다. 이미 최단 거리가 확정된 집합 S에, $k+1$번째로 새로운 노드 'u'를 추가할 때, u까지의 거리가 현재 값보다 더 짧아지는 '우회 경로'가 존재할 수 없다는 것을 '음수 가중치가 없다'는 전제를 이용해 논리적으로 증명해 주십시오.",
+            step3Label: "논리와 코딩의 연결로 서론 작성",
+            step3Text: "수학적 증명이 컴퓨터 과학의 뼈대가 된다는 깨달음을 수학과/컴퓨터공학과 진로에 맞춰 서론으로 정리합니다.",
+            prompt3: "수학이나 컴퓨터과학 진학을 희망하는 학생을 위해, '경험적 테스트를 넘어 수학적 귀납법을 통해 알고리즘의 무결성을 증명하는 과정의 중요성'을 강조하는 탐구 보고서 서론을 500자 내외로 작성해 주십시오.",
+            record: "코딩 실습에 머물지 않고, 교과서에서 배운 '수학적 귀납법'을 컴퓨터 알고리즘의 무결성 증명에 직접 적용해 논리적으로 서술한 점은 뛰어난 학업역량을 증명합니다.",
+            extend: "만약 간선에 음수($-$) 가중치가 있다면, 귀납법의 어느 단계($k \\to k+1$)에서 논리적 모순이 발생하는지 정확히 짚어보기."
+        },
+        {
+            title: "위상수학(Topology) 관점의 지하철 노선도 설계",
+            filter: "수학/교육", category: ["수학교육", "통계학"],
+            q: "지하철 노선도는 왜 실제 지형이나 구불구불한 궤도를 무시하고 직선으로만 그릴까?",
+            desc: "거리와 방향이 무시되고 '연결 상태(위상)'만 보존된 그래프 이론의 본질을 이해하고 적용합니다.",
+            step1Label: "노선도의 비밀 파악하기",
+            step1Text: "실제 지도 위의 지하철 궤적과 지하철 노선도를 겹쳐 비교한 뒤, <b>'위상동형(Topological Isomorphism)'</b>의 개념을 내 말로 쉽게 정리합니다.",
+            prompt1: "해리 벡(Harry Beck)이 처음 고안한 런던 지하철 노선도는 실제 지리적 거리나 굴곡을 무시하고 수직, 수평, 45도 대각선으로만 그렸습니다. 이러한 설계가 왜 수학의 '위상수학(Topology)'적 관점이며, 그래프 이론에서 노드와 간선을 어떻게 취급하는지 고등학생에게 설명해 주십시오.",
+            step2Label: "나만의 위상 그래프 그리기",
+            step2Text: "우리 동네의 버스 정류장 5~6개를 실제 거리에 맞춰 점을 찍고 연결한 뒤(지형도), 이를 다시 간격이 균일한 <b>추상적인 그래프(노선도)</b>로 직접 새로 그려봅니다.",
+            prompt2: "지하철 노선도처럼 '실제 거리'를 무시한 위상 그래프 위에서 다익스트라 알고리즘으로 '최단 시간'을 찾으려면, 눈에 보이는 선의 길이가 아니라 간선에 부여된 '가중치(소요 시간)' 숫자에만 전적으로 의존해야 합니다. 시각적 길이와 데이터(가중치)가 분리되는 이러한 추상화 과정의 장점을 설명해 주십시오.",
+            step3Label: "추상화의 힘으로 결론 내기",
+            step3Text: "복잡한 현실(지도)을 단순한 모델(그래프)로 추상화했을 때 본질적 문제(최단거리 연산)가 얼마나 쉬워지는지 교육적 관점에서 결론을 적습니다.",
+            prompt3: "수학교육 또는 통계학과 진학용 탐구 소감문을 작성해 주십시오. 400자 분량으로, '현실의 복잡한 물리적 형태를 버리고 연결성(위상)이라는 본질만 남기는 수학적 추상화가 문제 해결(알고리즘)에 주는 통찰'을 담아 주십시오.",
+            record: "일상에서 매일 보는 지하철 노선도를 위상수학적 그래프 추상화의 결과물로 인지하고, 시각적 정보와 데이터 가중치를 분리해 분석한 통찰력을 어필할 수 있습니다.",
+            extend: "학교에서 집까지의 이동을 '물리적 지도'와 '위상 노선도(환승역, 정류장 기준)' 두 가지로 그려서 친구들에게 설명해 보기."
+        }
+    ];
+
+    function renderTopics(filter) {
+        const container = document.getElementById('button-container');
+        container.innerHTML = '';
+        
+        const filteredTopics = filter === '전체' 
+            ? topics 
+            : topics.filter(t => t.filter === filter);
+        
+        filteredTopics.forEach((t, i) => {
+            // Find global index for showContent function
+            const globalIndex = topics.findIndex(topic => topic.title === t.title);
+            
+            const btn = document.createElement('button');
+            btn.className = 'topic-btn';
+            btn.onclick = () => showContent(globalIndex);
+            
+            const dotColor = catColor[t.filter] || 'var(--ink)';
+            btn.innerHTML = `
+                <div class="dot" style="background-color: ${dotColor};"></div>
+                <div>
+                    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: ${dotColor}; letter-spacing: 1px; font-weight: 600; margin-bottom: 4px;">${t.filter}</div>
+                    ${t.title}
+                </div>
+            `;
+            container.appendChild(btn);
+        });
+    }
+
+    function filterTopics(category) {
+        // Update active class on filter buttons
+        const btns = document.querySelectorAll('.filter-btn');
+        btns.forEach(b => {
+            if (b.innerText.includes(category) || (category === '전체' && b.innerText === '전체')) {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
+        
+        renderTopics(category);
+    }
+
+    function showContent(index) {
+        // Update active topic button styling
+        const allBtns = document.querySelectorAll('.topic-btn');
+        allBtns.forEach(b => b.classList.remove('active'));
+        // We match by title to highlight the correct one since the rendered list might be filtered
+        const currentTitle = topics[index].title;
+        allBtns.forEach(b => {
+            if(b.innerHTML.includes(currentTitle)) {
+                b.classList.add('active');
+            }
+        });
+
+        const t = topics[index];
+        const display = document.getElementById('content-display');
+        const color = catColor[t.filter] || 'var(--primary)';
+
+        const tagsHtml = t.category.map(c => `<span class="tag">#${c}</span>`).join('');
+        
+        const stepsHtml = [1, 2, 3].map(i => `
+            <div class="step-container">
+                <div class="step-header">
+                    <div class="sn" style="background: ${color}">STEP ${i}</div>
+                    ${t[`step${i}Label`]}
+                </div>
+                <div class="step-body">
+                    <div class="action-text">${t[`step${i}Text`]}</div>
+                    <div class="ai-prompt-box">
+                        <button class="copy-btn" onclick="copyPrompt(this, \`${t[`prompt${i}`].replace(/`/g, "\\`")}\`)">복사하기</button>
+                        <div class="prompt-text">${t[`prompt${i}`]}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        display.innerHTML = `
+            <div class="c-cat" style="color: ${color}">${t.filter}</div>
+            <h2 class="c-title">${t.title}</h2>
+            <div class="tags">${tagsHtml}</div>
+            
+            <div class="question-box">
+                <div class="lbl">핵심 탐구 질문 (Core Question)</div>
+                <div class="q">Q. ${t.q}</div>
+            </div>
+            
+            <div class="desc-box">
+                ${t.desc}
+            </div>
+            
+            ${stepsHtml}
+            
+            <div class="record-box">
+                <div class="lbl">📝 생기부 기록 포인트</div>
+                <p>${t.record}</p>
+            </div>
+            
+            <div class="extend-box">
+                <div class="lbl">후속 탐구 〉</div>
+                <div>${t.extend}</div>
+            </div>
+        `;
+
+        if (window.MathJax) {
+            MathJax.typesetPromise([display]).catch(function (err) {
+                console.error('MathJax error: ', err.message);
+            });
+        }
+    }
+
+    function copyPrompt(btn, text) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Visual feedback on button
+            const originalText = btn.innerText;
+            btn.innerText = "복사완료!";
+            btn.style.background = "#7c3aed";
+            btn.style.color = "white";
+            
+            // Show toast
+            const toast = document.getElementById("toast");
+            toast.className = "show";
+            
+            setTimeout(() => { 
+                toast.className = toast.className.replace("show", ""); 
+                btn.innerText = originalText;
+                btn.style.background = "";
+                btn.style.color = "";
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert("복사에 실패했습니다.");
+        });
+    }
+
+    // Initialize page
+    window.onload = () => {
+        filterTopics('전체');
+    };
+</script>
+
+</body>
+</html>
